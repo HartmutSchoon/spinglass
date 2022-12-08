@@ -30,7 +30,7 @@ fn main() {
     eframe::start_web(
         "the_canvas_id", // hardcode it
         web_options,
-        Box::new(|cc| Box::new(eframe_template::TemplateApp::new(cc))),
+        Box::new(|cc| Box::new(spinglass::App::new())),
     )
     .expect("failed to start eframe");
 }
