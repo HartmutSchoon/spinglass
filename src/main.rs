@@ -5,15 +5,13 @@
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     // Log to stdout (if you run with `RUST_LOG=debug`).
-
-    use eframe::App;
     tracing_subscriber::fmt::init();
 
     let native_options = eframe::NativeOptions::default();
     eframe::run_native(
         "eframe template",
         native_options,
-        Box::new(|cc| Box::new(spinglass::App::new())),
+        Box::new(|cc| Box::new(spinglass::App::new(cc))),
     );
 }
 
@@ -27,10 +25,14 @@ fn main() {
     tracing_wasm::set_as_global_default();
 
     let web_options = eframe::WebOptions::default();
-    eframe::start_web(
-        "the_canvas_id", // hardcode it
-        web_options,
-        Box::new(|cc| Box::new(spinglass::App::new())),
-    )
-    .expect("failed to start eframe");
+
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::start_web(
+            "the_canvas_id", // hardcode it
+            web_options,
+            Box::new(|cc| Box::new(spinglass::App::new(cc))),
+        )
+        .await
+        .expect("failed to start eframe");
+    });
 }

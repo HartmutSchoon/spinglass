@@ -239,6 +239,7 @@ impl Simulation{
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn thread_step(&mut self){
         if !self.running{
             return
@@ -309,6 +310,30 @@ impl Simulation{
         }
 
 
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn thread_step(&mut self){
+        if !self.running{
+            return
+        }
+        //function to compute multiple metropolis steps for multiple grids using multithreading
+
+        //amount of metropolis steps to perform before thread closes
+        let thread_steps = self.config.thread_steps.clone();
+        for grid in self.grids.iter_mut(){
+            for _ in 0..thread_steps{
+                grid.metropolis_step();
+            }
+            grid.update_history();
+        }
+
+        for grid in self.pt_enviroment.grids.iter_mut(){
+            for _ in 0..thread_steps{
+                grid.metropolis_step();
+            }
+            grid.update_history();
+        }
     }
 
     pub fn grid(&self, grid_id: u32)-> Option<&Grid>{

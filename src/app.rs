@@ -35,7 +35,7 @@ pub struct App {
 }
 
 impl App{
-    pub fn new() -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //load config and split into smaller parts
         let config = config::load(); 
         let mut sim = Simulation::new();
