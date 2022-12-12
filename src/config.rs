@@ -18,17 +18,6 @@ pub struct Config{
     pub app_config:AppConfig,
 }
 
-impl Default for Config{
-    fn default()->Self{
-        return Config{
-            grid_config: GridConfig::default(),
-            pt_config: PTConfig::default(),
-            simulation_config:SimulationConfig::default(),
-            app_config:AppConfig::default(),
-        };
-    }
-}
-
 
 #[derive(Deserialize,Clone)]
 pub struct PTConfig{
@@ -37,18 +26,6 @@ pub struct PTConfig{
     pub T_start: f64,
     pub T_end: f64,
 }
-
-impl Default for PTConfig{
-    fn default() -> Self{
-        return PTConfig{
-            num_T_steps: 3,
-            num_grids_equal_T: 2,
-            T_start: 0.0,
-            T_end: 3.0,
-        }
-    }
-}
-
 #[derive(Deserialize,Clone)]
 pub struct GridConfig{
     pub grid_dimensions:Vec<u16>,
@@ -61,21 +38,6 @@ pub struct GridConfig{
     pub history_capacity:usize,
 }
 
-impl Default for GridConfig{
-    fn default() -> Self{
-        return GridConfig{
-            grid_dimensions:vec![100,100],
-            particle_position_method: ParticlePositionMethod::FillGrid,
-            num_particles:1000,
-            coupling_limits: [1.0, 1.0],
-            T:0.0,
-            spin_up_init: false,
-            external_field:0.0,
-            history_capacity:1000,
-        }
-    }
-}
-
 #[derive(Deserialize,Clone)]
 pub struct SimulationConfig{
     pub num_grids:u32,
@@ -83,27 +45,13 @@ pub struct SimulationConfig{
     pub num_steps:u32,
 }
 
-impl Default for SimulationConfig{
-    fn default() -> Self{
-        return SimulationConfig{
-            num_grids:0,
-            thread_steps:10000,
-            num_steps:100000,
-        }
-    }
-}
-
 #[derive(Deserialize,Clone)]
 pub struct AppConfig{
 }
 
-impl Default for AppConfig{
-    fn default()->Self{
-        return AppConfig{};
-    }
-}
-
 pub fn load()-> Config{
-    let config = Config::default();
+    let mut config_str = String::new();
+    File::open("./config.toml").unwrap().read_to_string(&mut config_str);
+    let config:Config = toml::from_str(&config_str).unwrap();
     return config
 }

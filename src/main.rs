@@ -36,3 +36,9 @@ fn main() {
         .expect("failed to start eframe");
     });
 }
+
+/*TODO: 
+    -Die couplings müssen nach Gauß initiert werden
+    -
+
+*/

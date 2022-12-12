@@ -1,38 +1,49 @@
 use crate::{config::*, particles::*};
 use rand::{self, Rng};
 use log::{error,warn};
-use serde::Deserialize;
+use std::fs;
 
 #[derive(Clone)]
 pub struct History{
-    T:VecDeque<f64>,
-    energy:VecDeque<f64>,
+    pub run: VecDeque<u32>,
+    pub T:VecDeque<f64>,
+    pub energy:VecDeque<f64>,
+    pub magnetization: VecDeque<f64>,
     current_size: usize,
     capacity: usize,
 }
 impl History {
     pub fn new(capacity:usize)->Self{
         return History{
+            run: VecDeque::new(),
             T: VecDeque::new(),
             energy: VecDeque::new(),
+            magnetization: VecDeque::new(),
             current_size:0,
             capacity}
     }
-    pub fn add(&mut self,new_temp: f64,new_energy: f64){
+    pub fn add(&mut self,run:u32,T: f64,energy: f64, magnetization: f64){
         if self.capacity == 0 {return} 
         if self.current_size==self.capacity{self.remove_oldest()}
-        self.T.push_back(new_temp);
-        self.energy.push_back(new_energy);
+
+        self.run.push_back(run);
+        self.T.push_back(T);
+        self.energy.push_back(energy);
+        self.magnetization.push_back(magnetization);
+
         self.current_size+=1;
     }
     pub fn remove_oldest(&mut self){
         if self.current_size == 0 {return}
+
+        self.run.pop_front();
         self.T.pop_front();
         self.energy.pop_front();
+        self.magnetization.pop_front();
+
         self.current_size-=1;
     }  
-    pub fn T(&self)->&VecDeque<f64>{return &self.T}
-    pub fn energy(&self)->&VecDeque<f64>{return &self.energy}
+
     pub fn current_size(&self)->usize{return self.current_size}
     pub fn capacity(&self)->usize{return self.capacity}
 }
@@ -93,9 +104,11 @@ impl GridPos {
 
 
 
-#[derive(Clone)]
+//#[derive(Clone)]
 pub struct Grid{
     id: u32,
+    run: u32,
+    pub cloned_from: Option<u32>,
     pub config: GridConfig,
     dimensions: Vec<u16>,
     capacity: u32,
@@ -106,12 +119,15 @@ pub struct Grid{
     grid_positions: Vec<GridPos>,
     history: History,
     sweep: Option<Sweep>,
+    output_file: Option<fs::File>,
     //rng_thread: ThreadRng,
     //rng_grid_idx: Uniform<usize>
 }
 
 impl Grid{
     pub fn new(config:GridConfig, id:u32)->Result<Self,String>{
+        let run = 0;
+        let cloned_from = None;
         // pre compute fields
         let dimensions = config.grid_dimensions.clone();
         let capacity:u32 = dimensions.iter().map(|&e|u32::from(e)).product();
@@ -126,10 +142,13 @@ impl Grid{
         let mut temp_history:Vec<f64> = Vec::new();
         let mut history = History::new(config.history_capacity);
         let mut sweep = None;
+        let output_file = None;
         // create grid
         let mut grid = Grid{
             //TODO: warum unterscheiden zwischen sachen in Config und in Grid struct? Warum nicht z.B. alles in Config?
             id,
+            run,
+            cloned_from,
             config, 
             dimensions,
             capacity,
@@ -139,13 +158,46 @@ impl Grid{
             external_field,
             history,
             sweep,
+            output_file,
             //rng_thread,
             //rng_grid_idx,
         };
-        grid.create_grid_positions().init_particles().link_all_particles();
+        grid.create_grid_positions()
+            .init_particles()
+            .link_all_particles()
+            .init_output_file();
         //grid.init_particles(grid.config.num_particles).link_all_particles();
         grid.update_history();
         return Ok(grid);
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn init_output_file(&mut self)->&mut Self{
+        let path = format!("./results/grid_{}.tsv",self.id);
+        fs::remove_file(path.clone());
+        self.output_file = Some(fs::OpenOptions::new()
+            .create_new(true)
+            .append(true)
+            .open(path)
+            .expect("Unable to open file"));
+        let header = String::from(
+            "Run\tT\tEnergy\tMagnetization\n");
+
+        self.output_file.as_mut().unwrap().write_all(header.as_bytes());
+
+        return self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn init_output_file(&self){
+        return;
+    }   
+
+    fn write_to_output_file(&mut self, run:u32, T:f64, energy:f64, magnetization:f64){
+        if let Some(file) = self.output_file.as_mut(){
+            let output = String::from(
+                format!("{}\t{}\t{}\t{}\n",run,T,energy,magnetization));
+            file.write_all(output.as_bytes());
+        }
     }
 
     fn create_grid_positions(&mut self)->&mut Self{
@@ -432,7 +484,17 @@ impl Grid{
             //Add external field to energy
             energy -= 0.5 * self.external_field * f64::from(spin);
         }
-        return energy/(self.num_particles as f64);
+        return energy/self.capacity as f64;
+    }
+
+    pub fn calc_magnetization(& self)-> f64{
+        let mut spin_sum = 0;
+        for position in self.grid_positions.iter(){
+            if let Some(particle) = position.particle.as_ref(){
+                spin_sum += particle.spin().value();
+            }
+        }
+        return spin_sum as f64 / self.capacity as f64
     }
 
     pub fn metropolis_step(&mut self)->Option<usize>{
@@ -448,6 +510,9 @@ impl Grid{
         let mut neighbour_id: u32;
         let mut neighbour_spin: &Spin;
             
+        //update run
+        self.run+=1;
+
         //select random grid position
         //let grid_idx = self.rng_grid_idx.sample(&mut self.rng_thread);
         let grid_id = rand::thread_rng().gen_range(
@@ -723,9 +788,13 @@ impl Grid{
     pub fn set_external_field(&mut self, external_field:f64){self.external_field = external_field}
     pub fn set_id(&mut self, id:u32){self.id = id}
     pub fn update_history(&mut self){
-        self.history.add(
-            self.T,
-            self.calc_energy())
+        let run = self.run;
+        let T = self.T;
+        let energy = self.calc_energy();
+        let magnetization = self.calc_magnetization();
+
+        self.history.add(run, T, energy, magnetization);
+        self.write_to_output_file(run, T, energy, magnetization);
     }
     pub fn history(&self)->&History{return &self.history}
     pub fn dimensions(&self)->&Vec<u16>{return &self.dimensions}
@@ -760,6 +829,27 @@ impl fmt::Display for Grid{
             };
         }
         write!(f,"")
+    }
+}
+
+impl Clone for Grid {
+    fn clone(&self) -> Self{
+        let output_file:Option<fs::File> = None;
+        let grid = Grid { 
+            id: self.id, 
+            run: self.run, 
+            cloned_from: Some(self.id), 
+            config: self.config.clone(), 
+            dimensions: self.dimensions.clone(), 
+            capacity: self.capacity, 
+            num_particles: self.num_particles, 
+            T: self.T, 
+            external_field: self.external_field, 
+            grid_positions: self.grid_positions.clone(), 
+            history: self.history.clone(), 
+            sweep: self.sweep.clone(), 
+            output_file};
+        return grid;
     }
 }
 

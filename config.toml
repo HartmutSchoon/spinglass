@@ -7,7 +7,7 @@ num_particles = 1000
 T = 0
 external_field = 0
 #number of points stored in History of the Grid
-history_capacity = 1000
+history_capacity = 100000
 
 #true: Initialize all spins with Spin up.
 #false: Initialize all spins with random orientation.
@@ -21,7 +21,7 @@ coupling_limits = [1.0, 1.0]
 [simulation_config]
 num_grids = 0
 #amount of simulation steps every grid performs before joining with other threads
-thread_steps = 10000
+thread_steps = 100000
 
 #amount of "thread_steps" the simulation makes. Will not be used if simulation is started as app. 
 num_steps = 100000

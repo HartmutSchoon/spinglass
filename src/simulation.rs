@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs;
 use std::io::Write;
 use std::ops::Deref;
 use std::sync::mpsc;
@@ -14,7 +14,6 @@ use crate::grid::{Grid,History, Sweep};
 
 pub struct PTEnviroment{
     pub config: PTConfig,
-    pub grids : Vec<Grid>,
     pub pt_ids: Vec<equalTGridIds>
 }
 
@@ -22,15 +21,13 @@ impl PTEnviroment {
     pub fn new(config:PTConfig)-> Self{
         return PTEnviroment {
             config,
-            grids: Vec::new(),
             pt_ids: Vec::new()}
-    }
-    pub fn grid(& self, grid_id:u32)->Option<& Grid>{
-        return self.grids.iter().find(|e|e.id()==grid_id);
-    }
-
-    pub fn grid_mut(&mut self, grid_id:u32)->Option<&mut Grid>{
-        return self.grids.iter_mut().find(|e|e.id()==grid_id);
+        }
+    pub fn delete_id(&mut self, id:u32){
+        for element in self.pt_ids.iter_mut(){
+            element.delete_id(id)
+        }
+        self.pt_ids.retain(|elem|elem.ids.len() > 0);
     }
 
 }
@@ -40,13 +37,19 @@ pub struct equalTGridIds{
     pub ids: Vec<u32>
 }
 
+impl equalTGridIds{
+    pub fn delete_id(&mut self, id:u32){
+        self.ids.retain(|&existing_id|existing_id != id);
+    }
+}
+
 
 pub struct Simulation{
     pub config: SimulationConfig,
     pub default_grid_config: GridConfig,
     grids: Vec<Grid>,
     grids_to_delete: Vec<u32>,
-    current_grid_ids: Vec<u32>,
+    pub current_grid_ids: Vec<u32>,
     pub running: bool,
     pub pt_enviroment: PTEnviroment
 }
@@ -75,10 +78,20 @@ impl Simulation{
             running,
             pt_enviroment,
         };
-
+        sim.init_dir();
         return sim
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
+    fn init_dir(&self){
+        fs::remove_dir_all("./results/");
+        fs::create_dir("./results/");
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn init_dir(&self){
+        return;
+    }    
     pub fn simulation_step(&mut self){
         self.thread_step();
         self.pt_exchange();
@@ -86,24 +99,29 @@ impl Simulation{
     }
 
 
-    pub fn pt_init(&mut self)->Result<(),String>{
+    pub fn pt_init(&mut self, original_grid_id: u32)->Result<(),String>{
         let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
         let T_end = self.pt_enviroment.config.T_end;
-        let delta_T: f64 = (T_end-T_start)/K as f64;
-        let mut grid_config = self.default_grid_config.clone();
+        let delta_T: f64 = (T_end-T_start)/(K as f64 -1.0);
+
+        let original_grid = self.grid(original_grid_id).unwrap();
+        //let mut grid_config = self.default_grid_config.clone();
 
         let mut current_T:f64 = T_start;
         for k in 0..K{
-            grid_config.T = current_T;
             let mut equal_T_Ids = equalTGridIds{
                 T: current_T,
-                ids: Vec::new()};
-            
+                ids: Vec::new()};       
             for q in 0..Q{
-                let pt_id = k*Q+q;
-                self.pt_enviroment.grids.push(Grid::new(grid_config.clone(), pt_id)?);
+                let mut pt_id: u32;
+                if k==0 && q == 0{
+                    pt_id = original_grid_id;
+                }else {
+                    pt_id = self.clone_grid(original_grid_id)?;
+                    self.grid_mut(pt_id).unwrap().set_T(current_T);
+                }
                 equal_T_Ids.ids.push(pt_id);
             }
             self.pt_enviroment.pt_ids.push(equal_T_Ids);
@@ -126,7 +144,7 @@ impl Simulation{
             return
         }
 
-        if self.pt_enviroment.grids.len() == 0{
+        if self.pt_enviroment.pt_ids.len() == 0{
             return
         }
 
@@ -134,7 +152,7 @@ impl Simulation{
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
         let T_end = self.pt_enviroment.config.T_end;
-        let delta_T: f64 = (T_end-T_start)/K as f64;
+        let delta_T: f64 = (T_end-T_start)/(K as f64 - 1.0);
 
         let mut rng = thread_rng();
 
@@ -150,17 +168,17 @@ impl Simulation{
                 let lower_id = lower_ids.iter().choose(&mut rng).unwrap().clone();
                 let higher_id = higher_ids.iter().choose(&mut rng).unwrap().clone();
 
-                let mut lower_T = self.pt_enviroment.grid(lower_id).unwrap().T();
-                let mut lower_energy = self.pt_enviroment.grid(lower_id).unwrap().calc_energy();
+                let mut lower_T = self.grid(lower_id).unwrap().T();
+                let mut lower_energy = self.grid(lower_id).unwrap().calc_energy();
 
-                let mut higher_T = self.pt_enviroment.grid(higher_id).unwrap().T();
-                let mut higher_energy = self.pt_enviroment.grid(higher_id).unwrap().calc_energy();
+                let mut higher_T = self.grid(higher_id).unwrap().T();
+                let mut higher_energy = self.grid(higher_id).unwrap().calc_energy();
 
                 let acceptance_prop = self.pt_acceptance_probability(
                     lower_T, higher_T, lower_energy, higher_energy);
                 if rand::thread_rng().gen_bool(acceptance_prop){
-                    self.pt_enviroment.grid_mut(lower_id).unwrap().set_T(higher_T);
-                    self.pt_enviroment.grid_mut(higher_id).unwrap().set_T(lower_T);
+                    self.grid_mut(lower_id).unwrap().set_T(higher_T);
+                    self.grid_mut(higher_id).unwrap().set_T(lower_T);
                     lower_ids.retain(|&e|e != lower_id);
                     lower_ids.push(higher_id);
                     higher_ids.retain(|&e|e != higher_id);
@@ -185,7 +203,7 @@ impl Simulation{
         Ok(new_id)
     }
 
-    pub fn clone_grid(&mut self,grid_id: u32)->Result<(),String>{
+    pub fn clone_grid(&mut self,grid_id: u32)->Result<u32,String>{
         let mut orig_grid = match self.grid(grid_id){
             Some(grid) => grid,
             None => return Err("Grid id not found. Can't clone.".to_owned()),
@@ -193,9 +211,10 @@ impl Simulation{
         let mut cloned_grid = orig_grid.clone();
         let new_id = self.find_free_grid_id()?;
         cloned_grid.set_id(new_id);
+        cloned_grid.init_output_file();
         self.grids.push(cloned_grid);
         self.current_grid_ids.push(new_id);
-        return Ok(())
+        return Ok(new_id)
     }
 
     fn find_free_grid_id(&self)->Result<u32,String>{
@@ -211,6 +230,7 @@ impl Simulation{
     pub fn delete_grid(&mut self, grid_id:u32){
         self.grids.retain(|grid| grid.id() != grid_id);
         self.current_grid_ids.retain(|&existing_id|existing_id != grid_id);
+        self.pt_enviroment.delete_id(grid_id);
     }
 
     pub fn queue_grid_deletion(&mut self, grid_id:u32){
@@ -274,40 +294,10 @@ impl Simulation{
         //if it isn't dropped we get a deadlock because rx waits for tx
         drop(tx);
 
-         //communication channel to parent
-         let (tx_pt,rx_pt) = mpsc::channel();
-
-        //Loop over every existing grid
-        for _ in 0..self.pt_enviroment.grids.len(){
-            //pop grid to gain ownership
-            let mut thread_grid = self.pt_enviroment.grids.pop().unwrap();
-            //clone channel sender
-            let thread_tx = tx_pt.clone();
-            //amount of metropolis steps to perform before thread closes
-            let thread_steps = self.config.thread_steps.clone();
-
-            thread::spawn(move ||{
-                //run N metropolis steps in thread
-                for _ in 0..thread_steps{
-                    thread_grid.metropolis_step();
-                }
-                //calculate and save temperature and energy of grid
-                thread_grid.update_history();
-                //send results
-                thread_tx.send(thread_grid).unwrap();
-            });
-        }
-        drop(tx_pt);
-
         //gather updated grids
         for grid in rx{
             self.grids.push(grid);
-        }
-
-        //gather updated grids
-        for grid in rx_pt{
-            self.pt_enviroment.grids.push(grid);
-        }
+        };
 
 
     }

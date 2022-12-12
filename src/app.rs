@@ -172,8 +172,10 @@ impl eframe::App for App{
                 ui.label("Simulation Parameters");
                 ui.label("#Steps Grids run in Multithreading: ");
                 let mut thread_steps = self.sim.config.thread_steps;
-                ui.add(DragValue::new(&mut thread_steps).speed(100)
-                    .prefix("#Threaded Steps: "));
+                let mut slider_steps = thread_steps as f64 / 1000.0;
+                ui.add(DragValue::new(&mut slider_steps).speed(100)
+                    .prefix("#Threaded Steps: ").suffix("K"));
+                thread_steps = (slider_steps * 1000.0) as u32;
                 self.sim.config.thread_steps = thread_steps;
                 if ui.add(egui::Button::new("Run Simulation")).clicked(){
                     self.sim.running=true;
@@ -186,11 +188,6 @@ impl eframe::App for App{
                 };
 
             });
-
-            ui.label("Nur für sichtbarmachung von PT");
-            if ui.add(egui::Button::new("Initialize PT:")).clicked(){
-                self.sim.pt_init();
-            };
         });
 
         CentralPanel::default()
@@ -210,172 +207,169 @@ impl eframe::App for App{
                             let canvas_size = response.rect;
                             
                             let grid = self.sim.grid(grid_id).unwrap();
-
+        
                             let mut mesh = self.calc_rectangles_from_grid(
                                 canvas_size,
                                 grid);
                             painter.add(mesh);
                         });//Frame
-
-                        egui::Frame::group(ui.style())
-                        .show(ui, |ui| {
-                            ui.vertical(|ui|{
-                                
-                                let mut output_string = String::new();
-                                let mut dimensions = self.sim.grid(grid_id).unwrap().dimensions();
-                                output_string.push('[');
-                                for axis in dimensions{
-                                    output_string.push_str(&axis.to_string());
-                                    output_string.push(',');
-                                }
-                                output_string.pop();
-                                output_string.push(']');
-                                ui.label(format!("Dimensions: {}",output_string));
-                                let capacity = self.sim.grid(grid_id).unwrap().capacity();
-                                let scaled_capacity = (capacity as f64)/1000.0;
-                                ui.label(format!("Grid capacity: {}K",scaled_capacity));
-
-
-                                let mut T = self.sim.grid(grid_id).unwrap().T();
-                                ui.add(DragValue::new(&mut T).speed(0.01).prefix("Temperature: "));
-                                self.sim.grid_mut(grid_id).unwrap().set_T(T);
-
-                                let mut external_field = self.sim.grid(grid_id).unwrap().external_field();
-                                ui.add(DragValue::new(&mut external_field).speed(0.01).prefix("External Field: "));
-                                self.sim.grid_mut(grid_id).unwrap().set_external_field(external_field); 
+        
+                        Grid::new(format!("settings grid {}",grid_id)).show(ui, |ui|{
+                            egui::Frame::group(ui.style())
+                            .show(ui, |ui| {
+                                ui.vertical(|ui|{
+                                    
+                                    let mut output_string = String::new();
+                                    let mut dimensions = self.sim.grid(grid_id).unwrap().dimensions();
+                                    output_string.push('[');
+                                    for axis in dimensions{
+                                        output_string.push_str(&axis.to_string());
+                                        output_string.push(',');
+                                    }
+                                    output_string.pop();
+                                    output_string.push(']');
+                                    ui.label(format!("Dimensions: {}",output_string));
+                                    let capacity = self.sim.grid(grid_id).unwrap().capacity();
+                                    let scaled_capacity = (capacity as f64)/1000.0;
+                                    ui.label(format!("Grid capacity: {}K",scaled_capacity));
 
                                 
-                                ui.horizontal(|ui| {
-                                    if ui.add(egui::Button::new("Clone Grid")).clicked(){
-                                        self.sim.clone_grid(grid_id);
-                                    };
+                                    if let Some(id) = self.sim.grid(grid_id).unwrap().cloned_from{
+                                        ui.label(format!("Clone of Grid {}",id));
+                                    }
 
-                                    if ui.add(egui::Button::new("Delete Grid")).clicked(){
-                                        self.sim.queue_grid_deletion(grid_id);
+                                    let coupling_limits = self.sim.grid(grid_id).unwrap().config.coupling_limits;
+                                    ui.label(format!("Couplings: {:.2} - {:.2}",coupling_limits[0],coupling_limits[1]));
+                                    
+            
+            
+                                    let mut T = self.sim.grid(grid_id).unwrap().T();
+                                    ui.add(DragValue::new(&mut T).speed(0.01).prefix("Temperature: "));
+                                    self.sim.grid_mut(grid_id).unwrap().set_T(T);
+            
+                                    let mut external_field = self.sim.grid(grid_id).unwrap().external_field();
+                                    ui.add(DragValue::new(&mut external_field).speed(0.01).prefix("External Field: "));
+                                    self.sim.grid_mut(grid_id).unwrap().set_external_field(external_field); 
+            
+                                    
+                                    ui.horizontal(|ui| {
+                                        if ui.add(egui::Button::new("Clone Grid")).clicked(){
+                                            self.sim.clone_grid(grid_id);
+                                        };
+            
+                                        if ui.add(egui::Button::new("Delete Grid")).clicked(){
+                                            self.sim.queue_grid_deletion(grid_id);
+                                        };
+                                    });
+                                });
+                            });
+            
+                            egui::Frame::group(ui.style())
+                            .show(ui, |ui| {
+                                ui.vertical(|ui|{
+                                    ui.label("Linear Temperature Sweep");
+                                    let mut T_start = self.app_state.sweep.T_start();
+                                    ui.add(DragValue::new(&mut T_start).speed(0.01).prefix("Start: "));
+                                    self.app_state.sweep.set_T_start(T_start);
+            
+                                    let mut T_end = self.app_state.sweep.T_end();
+                                    ui.add(DragValue::new(&mut T_end).speed(0.01).prefix("End: "));
+                                    self.app_state.sweep.set_T_end(T_end);
+            
+                                    let mut num_steps = self.app_state.sweep.num_steps();
+                                    let mut slider_steps:f64 = num_steps as f64 / 1000000.0;
+                                    ui.add(DragValue::new(&mut slider_steps).speed(0.1)
+                                        .prefix("#Steps: ").suffix("M"));
+                                    num_steps = (slider_steps * 1000000.0)as u64;
+                                    self.app_state.sweep.set_num_steps(num_steps);
+                                    
+            
+                                    if ui.add(egui::Button::new("Run!")).clicked(){
+                                        self.sim.grid_mut(grid_id).unwrap().set_sweep(
+                                            self.app_state.sweep.clone()
+                                        );
                                     };
+            
+            
+                                });
+                            });
+
+                            ui.end_row();
+                            egui::Frame::group(ui.style())
+                            .show(ui, |ui| {
+                                ui.vertical(|ui|{
+                                    ui.label("Parallel Tempering");
+
+                    
+                                    ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.num_T_steps)
+                                        .speed(0.1)
+                                        .prefix("#Different temperatures: "));
+
+                                    ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.num_grids_equal_T)
+                                        .speed(0.1)
+                                        .prefix("#Grids per temperature: "));
+
+                                    ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.T_start)
+                                        .speed(0.1)
+                                        .prefix("Lowest temperature: "));
+                                    
+                                    ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.T_end)
+                                        .speed(0.1)
+                                        .prefix("highest temperature: "));
+                                    
+
+                                    if ui.add(Button::new("Initialize!")).clicked(){
+                                        self.sim.pt_init(grid_id);
+                                    }
+
                                 });
                             });
                         });
-
-                        egui::Frame::group(ui.style())
-                        .show(ui, |ui| {
-                            ui.vertical(|ui|{
-                                ui.label("Linear Temperature Sweep");
-                                let mut T_start = self.app_state.sweep.T_start();
-                                ui.add(DragValue::new(&mut T_start).speed(0.01).prefix("Start: "));
-                                self.app_state.sweep.set_T_start(T_start);
-
-                                let mut T_end = self.app_state.sweep.T_end();
-                                ui.add(DragValue::new(&mut T_end).speed(0.01).prefix("End: "));
-                                self.app_state.sweep.set_T_end(T_end);
-
-                                let mut num_steps = self.app_state.sweep.num_steps();
-                                let mut slider_steps:f64 = num_steps as f64 / 1000000.0;
-                                ui.add(DragValue::new(&mut slider_steps).speed(0.1)
-                                    .prefix("#Steps: ").suffix("M"));
-                                num_steps = (slider_steps * 1000000.0)as u64;
-                                self.app_state.sweep.set_num_steps(num_steps);
-                                
-
-                                if ui.add(egui::Button::new("Run!")).clicked(){
-                                    self.sim.grid_mut(grid_id).unwrap().set_sweep(
-                                        self.app_state.sweep.clone()
-                                    );
-                                };
-
-
-                            });
-                        });
-
+        
                     });
+                    
             
                     Plot::new(format!("Plot {}",grid_id))
                     .include_x(0.0)
-                    .include_x(100.0)
+                    //.include_x(100.0)
                     .legend(Legend::default())
                     .show(ui, |plot_ui|{
                         let history = self.sim.history_by_id(grid_id).unwrap();
                         let T:PlotPoints = (0..history.current_size()).map(|i|{
                             let x = (i as f64 * self.sim.config.thread_steps as f64);
-                            let T= history.T();
-                            [x,T[i]]
+                            let T= history.T[i];
+                            [x,T]
                             }).collect();
-                        let t_line=Line::new(T);
+                        let t_line=Line::new(T).name("Temperature");
+                        plot_ui.line(t_line);
                         let E:PlotPoints = (0..history.current_size()).map(|i|{
                             let x = (i as f64 * self.sim.config.thread_steps as f64);
-                            let energy= history.energy();
-                            [x,energy[i]]
+                            let energy= history.energy[i];
+                            [x,energy]
                         }).collect();
-                        let e_line = Line::new(E);
-                        plot_ui.line(t_line);
+                        let e_line = Line::new(E).name("Energy");;
                         plot_ui.line(e_line);
+
+                        let magnetization:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = (i as f64 * self.sim.config.thread_steps as f64);
+                            let mag= history.magnetization[i];
+                            [x,mag]
+                        }).collect();
+                        let mag_line = Line::new(magnetization).name("Magnetization");
+                        plot_ui.line(mag_line);
                     });
                 
-                });//Window
+                });
             }//Grid Loop
-            if self.sim.pt_enviroment.grids.len() > 0{
-                let max_grids_same_T = 
-                    self.sim.pt_enviroment.pt_ids.iter().map(|e|e.ids.len()).max().unwrap() as f32;
-                let num_diff_T = self.sim.pt_enviroment.pt_ids.len() as f32;
-                Window::new("Parallel Tempering").show(ctx, |win_ui| {
-                    let available_height = win_ui.available_height()-10.0;
-                    let available_width = win_ui.available_width()-10.0;
-                    //ui.vertical(|ui|{
-                        for  equal_T_grids in self.sim.pt_enviroment.pt_ids.iter(){
-                            win_ui.with_layout(Layout::left_to_right(Align::TOP), |row_ui|{                               
-                                //ui.label(format!("T: {}",equal_T_grids.T.to_string()));
-                                for &grid_id in equal_T_grids.ids.iter(){
-                                    Frame::group(row_ui.style())
-                                    //.outer_margin(Margin{left: 10.0, right: 10.0, top: 10.0, bottom: 10.0})
-                                    .show(row_ui, |group_ui|{
-                                        let group_size = Vec2{
-                                            x: available_width/max_grids_same_T-0.0,
-                                            y: available_height/num_diff_T-30.0,
-                                        };
-                                        group_ui.allocate_exact_size(group_size,Sense::hover());
-                                        
-                                        Frame::canvas(group_ui.style())
-                                        .fill(Color32::GRAY)
-                                        //.outer_margin(Margin{left:10.0, right: 10.0, top: 10.0, bottom: 10.0})
-                                        .show(group_ui, |frame_ui|{
-        
-                                            //ui.ctx().request_repaint();
-                                            /* let desired_canvas_size = Vec2 { 
-                                                x: available_width/max_grids_same_T-10.0,
-                                                y: available_height/num_diff_T-10.0}; */
-                                            let desired_canvas_size = group_size*Vec2 { x: 0.5, y: 0.5 };
-                                            let (response, painter) = 
-                                                frame_ui.allocate_painter(desired_canvas_size, Sense::hover());
-                                            let canvas_size = response.rect; 
-
-                                            /* let desired_canvas_size = size*Vec2 { x: 0.5, y: 0.5 };
-                                            let (canvas_size, _) = 
-                                                ui.allocate_exact_size(desired_canvas_size, Sense::hover());
-
-                                              */
-                                            let grid = self.sim.pt_enviroment.grid(grid_id).unwrap();
-        
-                                            let mut mesh = self.calc_rectangles_from_grid(
-                                                canvas_size,
-                                                grid);
-                                            painter.add(mesh);
-        
-                                        });
-
-                                    });
-                                    
-                                }
-                            });
-                        }
-
-                    //});
-                });     
-            }
             
             self.sim.simulation_step();
         });//CentralPanel
         self.sim.delete_queded_grids();
+/*         if self.sim.current_grid_ids.len() == 0{
+            
+        } */
     }
+
 }
 
 
