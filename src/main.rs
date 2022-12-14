@@ -41,5 +41,6 @@ fn main() {
 /*TODO: 
     -Die couplings müssen nach Gauß initiert werden
     -Multithreading in WASM
+    -Ab und zu stürzt der ab bei PT wenn man ein grid schließt
 
 */

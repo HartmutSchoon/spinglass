@@ -45,17 +45,17 @@ impl Spin{
         }
     }
 
-    pub fn value(&self)->i64{
+/*     pub fn value(&self)->i32{
         match self{
             Spin::Up => return 1,
             Spin::Down => return -1,
         }
-    }
+    } */
 }
 
 impl fmt::Display for Spin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{}",self.value().to_string())
+        write!(f,"{}",self.to_string())
     }
 }
 
@@ -73,6 +73,15 @@ impl From<&Spin> for f64{
         match spin{
             Spin::Up => return 1.0,
             Spin::Down => return -1.0,
+        }
+    } 
+}
+
+impl From<&Spin> for i32{
+    fn from(spin: &Spin) -> Self {
+        match spin{
+            Spin::Up => return 1,
+            Spin::Down => return -1,
         }
     } 
 }

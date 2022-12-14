@@ -135,7 +135,7 @@ impl Simulation{
         ->f64{
         let mut acceptance_prob = f64::min(
             1.0,
-            ((T_lower-T_higher)*(energy_lower-energy_higher)).exp());
+            ((1.0/T_lower-1.0/T_higher)*(energy_lower-energy_higher)).exp());
         return acceptance_prob
     }
 

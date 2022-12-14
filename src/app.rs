@@ -344,15 +344,15 @@ impl eframe::App for App{
                         plot_ui.line(t_line);
                         let E:PlotPoints = (0..history.current_size()).map(|i|{
                             let x = (i as f64 * self.sim.config.thread_steps as f64);
-                            let energy= history.energy[i];
+                            let energy= history.energy[i]/self.sim.grid(grid_id).unwrap().capacity as f64;
                             [x,energy]
                         }).collect();
-                        let e_line = Line::new(E).name("Energy");;
+                        let e_line = Line::new(E).name("Energy");
                         plot_ui.line(e_line);
 
                         let magnetization:PlotPoints = (0..history.current_size()).map(|i|{
                             let x = (i as f64 * self.sim.config.thread_steps as f64);
-                            let mag= history.magnetization[i];
+                            let mag= history.magnetization[i] as f64/self.sim.grid(grid_id).unwrap().capacity as f64;
                             [x,mag]
                         }).collect();
                         let mag_line = Line::new(magnetization).name("Magnetization");
