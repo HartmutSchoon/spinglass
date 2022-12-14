@@ -889,7 +889,7 @@ impl Clone for Grid {
     }
 }
 
-#[cfg(test)]
+/* #[cfg(test)]
 mod tests{
     use crate::{*,particles::*};
 
@@ -961,4 +961,4 @@ mod tests{
         pos = my_grid.next_pos(&pos).unwrap();
         assert_eq!(pos, vec![0,1]);      
     }
-}
+} */

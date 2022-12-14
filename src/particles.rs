@@ -147,7 +147,7 @@ impl fmt::Display for Particle{
         write!(f, "Particle[idx:{} spin:{} Neighbours:({})]", self.id, self.spin, output)
     }
 }
-
+/* 
 #[cfg(test)]
 mod tests{
     use super::*;
@@ -195,4 +195,4 @@ mod tests{
         assert_eq!(particles[0].links.len(), 0);
 
     }
-}
+} */
