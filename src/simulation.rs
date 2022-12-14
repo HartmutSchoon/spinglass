@@ -92,10 +92,10 @@ impl Simulation{
     fn init_dir(&self){
         return;
     }    
+
     pub fn simulation_step(&mut self){
         self.thread_step();
         self.pt_exchange();
-
     }
 
 
@@ -312,13 +312,6 @@ impl Simulation{
         //amount of metropolis steps to perform before thread closes
         let thread_steps = self.config.thread_steps.clone();
         for grid in self.grids.iter_mut(){
-            for _ in 0..thread_steps{
-                grid.metropolis_step();
-            }
-            grid.update_history();
-        }
-
-        for grid in self.pt_enviroment.grids.iter_mut(){
             for _ in 0..thread_steps{
                 grid.metropolis_step();
             }

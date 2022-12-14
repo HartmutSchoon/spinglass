@@ -39,6 +39,6 @@ fn main() {
 
 /*TODO: 
     -Die couplings müssen nach Gauß initiert werden
-    -
+    -Multithreading in WASM
 
 */
