@@ -441,6 +441,26 @@ impl Grid{
             
     }
 
+    pub fn calc_overlap(&self, other: &Self)->f64{
+        let mut overlap = 0.0;
+        for own_position in self.grid_positions.iter(){
+            if own_position.particle.is_none(){
+                continue;
+            }
+
+            let other_position = other.find_grid_position(own_position.id()).unwrap();
+            if other_position.particle.is_none(){
+                    continue;
+            };
+
+            let own_spin: f64 = own_position.particle.as_ref().unwrap().spin().into();
+            let other_spin: f64 = other_position.particle.as_ref().unwrap().spin().into();
+
+            overlap += own_spin*other_spin;
+        }
+        return overlap;
+    }
+
     pub fn calc_energy(&self)->f64{
         //calculate energy/amount of particles of whole grid. 
         //Returns: Energy
@@ -778,6 +798,22 @@ impl Grid{
                 }
             }
         }
+    }
+
+    pub fn find_grid_position(& self, target_id: u32)->Result<&GridPos,String>{
+        if self.grid_positions[target_id as usize].id() == target_id{
+            return Ok(&self.grid_positions[target_id as usize]);
+        }
+        let matching_positions:Vec<&GridPos> = self.grid_positions.iter().filter(|&elem|
+        elem.id()==target_id).collect();
+        
+        if matching_positions.len()==0{
+                return Err(format!("Did not find a grid postion with target_id {}",target_id).to_owned())
+        }
+        if matching_positions.len()>=1{
+            return Err("Found multiple grid positions with same id!".to_owned())
+        }
+        return Ok(matching_positions.first().unwrap())
     }
 
     pub fn grid_positions(&self)->&Vec<GridPos>{return &self.grid_positions}
