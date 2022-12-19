@@ -516,19 +516,18 @@ impl Grid {
             let own_spin: f64 = own_position.particle.as_ref().unwrap().spin().into();
             let other_spin: f64 = other_position.particle.as_ref().unwrap().spin().into();
 
-            let neighbours = own_position.particle.unwrap().neighbours();
-            for neighbour in neighbours{
+            let neighbours = own_position.particle.as_ref().unwrap().neighbours();
+            for neighbour in neighbours.iter(){
                 let position_id =  neighbour.target_id() as usize;
-                let own_neighbour_spin=i32::from(self.grid_positions[position_id].particle.unwrap().spin());
-                let other_neighbour_spin = match other.grid_positions[position_id].particle{
-                    Some(particle) => i32::from(particle.spin()),
-                    None => 0,
+                let own_neighbour_spin=f64::from(self.grid_positions[position_id].particle.as_ref().unwrap().spin());
+                let other_neighbour_spin = match other.grid_positions[position_id].particle.as_ref(){
+                    Some(particle) => f64::from(particle.spin()),
+                    None => 0.0,
                 };
+                linked_overlap += own_spin * own_neighbour_spin * other_spin * other_neighbour_spin;
             } 
-
-            overlap += own_spin * other_spin;
         }
-        return Ok(overlap);
+        return Ok(linked_overlap);
     }
 
     pub fn calc_energy(&self) -> f64 {

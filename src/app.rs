@@ -366,12 +366,19 @@ impl eframe::App for App{
                 .legend(Legend::default())
                 .show(ui, |plot_ui|{
                     let overlapp:PlotPoints = (0..self.sim.overlapp_histo.len()).map(|i|{
-                        let x = i as f64*self.sim.config.histo_width;
+                        let x = i as f64*self.sim.config.histo_width-1.0;
                         let overlapp= (self.sim.overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
                         [x,overlapp]
                     }).collect(); 
                     let overlapps_line = Line::new(overlapp).name("Overlapp");
                     plot_ui.line(overlapps_line);
+                    let linked_overlapp:PlotPoints = (0..self.sim.linked_overlapp_histo.len()).map(|i|{
+                        let x = i as f64*self.sim.config.histo_width-1.0;
+                        let overlapp= (self.sim.linked_overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
+                        [x,overlapp]
+                    }).collect(); 
+                    let linked_overlapps_line = Line::new(linked_overlapp).name("Linked Overlapp");
+                    plot_ui.line(linked_overlapps_line);
                 });
 
             });

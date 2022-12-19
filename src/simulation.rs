@@ -52,8 +52,8 @@ pub struct Simulation{
     pub current_grid_ids: Vec<u32>,
     pub running: bool,
     pub pt_enviroment: PTEnviroment,
-    pub overlapps: Vec<f64>,
     pub overlapp_histo: Vec<u32>,
+    pub linked_overlapp_histo: Vec<u32>,
 }
 
 impl Simulation{
@@ -70,10 +70,11 @@ impl Simulation{
         let mut grids_to_delete: Vec<u32> = Vec::new();
         let running = false;
         let mut pt_enviroment = PTEnviroment::new(global_config.pt_config.clone());
-        let overlapps = Vec::new();
 
         let num_bins = (2.0/config.histo_width+1.0).floor() as usize;
         let overlapp_histo = vec![0;num_bins];
+        let linked_overlapp_histo = vec![0;num_bins];
+        
         let mut sim =  Simulation{
             config,
             default_grid_config,
@@ -82,8 +83,8 @@ impl Simulation{
             grids_to_delete,
             running,
             pt_enviroment,
-            overlapps,
             overlapp_histo,
+            linked_overlapp_histo
         };
         sim.init_dir();
         return sim
@@ -103,10 +104,10 @@ impl Simulation{
     pub fn simulation_step(&mut self){
         self.thread_step();
         self.pt_exchange();
-        self.calc_overlapp(0.5);
+        self.update_overlapp_histogramm(0.5);
     }
 
-    pub fn calc_overlapp(&mut self, target_T: f64){
+    pub fn update_overlapp_histogramm(&mut self, target_T: f64){
         if self.running == false {return}
         match self.pt_enviroment.pt_ids.iter().find(|&elem|elem.T == target_T){
             None => return,
@@ -123,6 +124,13 @@ impl Simulation{
                     let bin = ((normed_orverlapp+1.0)/self.config.histo_width).floor() as usize;
                     self.overlapp_histo[bin]+=1;
 
+                    let linked_overlapp = self.grid(first_grid_id.clone()).unwrap().calc_linked_overlap(
+                        self.grid(other_grid_id.clone()).unwrap()).unwrap();
+                    
+                    let num_links = 2.0*self.grid(first_grid_id.clone()).unwrap().dimensions().len() as f64;
+                    let normed_linked_orverlapp = linked_overlapp/(num_links*capacity);
+                    let bin = ((normed_linked_orverlapp+1.0)/self.config.histo_width).floor() as usize;
+                    self.linked_overlapp_histo[bin]+=1;
                 }
                 
             },
