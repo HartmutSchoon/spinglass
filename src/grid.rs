@@ -473,7 +473,11 @@ impl Grid {
         return Ok(self);
     }
 
-    pub fn calc_overlap(&self, other: &Self) -> f64 {
+    pub fn calc_overlap(&self, other: &Self) -> Result<f64,String> {
+        if self.dimensions.iter().zip(other.dimensions.iter()).filter(|&(a,b)| a!=b).count() > 0{
+            return Err("Grid dimensions mismatch!".to_owned())
+        }
+
         let mut overlap = 0.0;
         for own_position in self.grid_positions.iter() {
             if own_position.particle.is_none() {
@@ -490,7 +494,41 @@ impl Grid {
 
             overlap += own_spin * other_spin;
         }
-        return overlap;
+        return Ok(overlap);
+    }
+
+    pub fn calc_linked_overlap(&self, other: &Self) -> Result<f64,String> {
+        if self.dimensions.iter().zip(other.dimensions.iter()).filter(|&(a,b)| a!=b).count() > 0{
+            return Err("Grid dimensions mismatch!".to_owned())
+        }
+
+        let mut linked_overlap = 0.0;
+        for own_position in self.grid_positions.iter() {
+            if own_position.particle.is_none() {
+                continue;
+            }
+
+            let other_position = other.find_grid_position(own_position.id()).unwrap();
+            if other_position.particle.is_none() {
+                continue;
+            };
+
+            let own_spin: f64 = own_position.particle.as_ref().unwrap().spin().into();
+            let other_spin: f64 = other_position.particle.as_ref().unwrap().spin().into();
+
+            let neighbours = own_position.particle.unwrap().neighbours();
+            for neighbour in neighbours{
+                let position_id =  neighbour.target_id() as usize;
+                let own_neighbour_spin=i32::from(self.grid_positions[position_id].particle.unwrap().spin());
+                let other_neighbour_spin = match other.grid_positions[position_id].particle{
+                    Some(particle) => i32::from(particle.spin()),
+                    None => 0,
+                };
+            } 
+
+            overlap += own_spin * other_spin;
+        }
+        return Ok(overlap);
     }
 
     pub fn calc_energy(&self) -> f64 {

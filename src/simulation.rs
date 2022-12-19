@@ -14,7 +14,7 @@ use crate::grid::{Grid,History, Sweep};
 
 pub struct PTEnviroment{
     pub config: PTConfig,
-    pub pt_ids: Vec<equalTGridIds>
+    pub pt_ids: Vec<equalTGridIds>,
 }
 
 impl PTEnviroment {
@@ -51,7 +51,9 @@ pub struct Simulation{
     grids_to_delete: Vec<u32>,
     pub current_grid_ids: Vec<u32>,
     pub running: bool,
-    pub pt_enviroment: PTEnviroment
+    pub pt_enviroment: PTEnviroment,
+    pub overlapps: Vec<f64>,
+    pub overlapp_histo: Vec<u32>,
 }
 
 impl Simulation{
@@ -68,7 +70,10 @@ impl Simulation{
         let mut grids_to_delete: Vec<u32> = Vec::new();
         let running = false;
         let mut pt_enviroment = PTEnviroment::new(global_config.pt_config.clone());
+        let overlapps = Vec::new();
 
+        let num_bins = (2.0/config.histo_width+1.0).floor() as usize;
+        let overlapp_histo = vec![0;num_bins];
         let mut sim =  Simulation{
             config,
             default_grid_config,
@@ -77,6 +82,8 @@ impl Simulation{
             grids_to_delete,
             running,
             pt_enviroment,
+            overlapps,
+            overlapp_histo,
         };
         sim.init_dir();
         return sim
@@ -96,8 +103,32 @@ impl Simulation{
     pub fn simulation_step(&mut self){
         self.thread_step();
         self.pt_exchange();
+        self.calc_overlapp(0.5);
     }
 
+    pub fn calc_overlapp(&mut self, target_T: f64){
+        if self.running == false {return}
+        match self.pt_enviroment.pt_ids.iter().find(|&elem|elem.T == target_T){
+            None => return,
+            Some(someGrids) =>{
+                let ids = someGrids.ids.clone();
+                if someGrids.ids.len()<2{return}
+                let first_grid_id = someGrids.ids.first().unwrap();
+                let mut other_grid_ids = someGrids.ids.iter().skip(1);
+                while let Some(other_grid_id) = other_grid_ids.next(){
+                    let overlapp = self.grid(first_grid_id.clone()).unwrap().calc_overlap(
+                        self.grid(other_grid_id.clone()).unwrap()).unwrap();
+                    let capacity = self.grid(first_grid_id.clone()).unwrap().capacity as f64;
+                    let normed_orverlapp = overlapp/capacity;
+                    let bin = ((normed_orverlapp+1.0)/self.config.histo_width).floor() as usize;
+                    self.overlapp_histo[bin]+=1;
+
+                }
+                
+            },
+        };
+    
+    }
 
     pub fn pt_init(&mut self, original_grid_id: u32)->Result<(),String>{
         let K = self.pt_enviroment.config.num_T_steps;

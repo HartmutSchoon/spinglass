@@ -361,7 +361,20 @@ impl eframe::App for App{
                 
                 });
             }//Grid Loop
-            
+            Window::new("Overlapp").show(ctx, |ui| {
+                Plot::new("Overlapp_Plot")
+                .legend(Legend::default())
+                .show(ui, |plot_ui|{
+                    let overlapp:PlotPoints = (0..self.sim.overlapp_histo.len()).map(|i|{
+                        let x = i as f64*self.sim.config.histo_width;
+                        let overlapp= (self.sim.overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
+                        [x,overlapp]
+                    }).collect(); 
+                    let overlapps_line = Line::new(overlapp).name("Overlapp");
+                    plot_ui.line(overlapps_line);
+                });
+
+            });
             self.sim.simulation_step();
         });//CentralPanel
         self.sim.delete_queded_grids();
