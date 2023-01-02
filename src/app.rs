@@ -191,6 +191,9 @@ impl eframe::App for App{
                 if ui.add(egui::Button::new("Show Overlapp")).clicked(){
                     self.app_state.show_overlapp = true;
                 }
+                if ui.add(egui::Button::new("Start Custom Run")).clicked(){
+                    self.sim.custom_run();
+                }
             });
         });
 

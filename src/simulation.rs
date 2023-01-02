@@ -107,6 +107,13 @@ impl Simulation{
         self.update_overlapp_histogramm(0.5);
     }
 
+    pub fn custom_run(&mut self){
+        let grid_id1 = self.new_grid().unwrap();
+        let grid_id2 = self.new_grid().unwrap();
+        let grid_id3 = self.clone_grid(grid_id1);
+        self.running = true;
+    }
+
     pub fn update_overlapp_histogramm(&mut self, target_T: f64){
         if self.running == false {return}
         match self.pt_enviroment.pt_ids.iter().find(|&elem|elem.T == target_T){
