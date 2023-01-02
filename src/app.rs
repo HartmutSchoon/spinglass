@@ -14,16 +14,17 @@ pub struct ParticleRect{
 
 struct AppState{
     pub sweep: grid::Sweep,
+    pub show_overlapp: bool,
 }
 impl AppState{
-    pub fn new(sweep: grid::Sweep)->Self{
-        return Self {sweep};
+    pub fn new(sweep: grid::Sweep, show_overlapp: bool)->Self{
+        return Self {sweep, show_overlapp};
     }
 
 }
 impl Default for AppState {
     fn default() -> Self {
-        Self { sweep: Default::default() }
+        return Self { sweep: Default::default(), show_overlapp: false};
     }
 }
 
@@ -187,6 +188,9 @@ impl eframe::App for App{
                     self.sim.queue_all_grids_deletion();
                 };
 
+                if ui.add(egui::Button::new("Show Overlapp")).clicked(){
+                    self.app_state.show_overlapp = true;
+                }
             });
         });
 
@@ -361,27 +365,29 @@ impl eframe::App for App{
                 
                 });
             }//Grid Loop
-            Window::new("Overlapp").show(ctx, |ui| {
-                Plot::new("Overlapp_Plot")
-                .legend(Legend::default())
-                .show(ui, |plot_ui|{
-                    let overlapp:PlotPoints = (0..self.sim.overlapp_histo.len()).map(|i|{
-                        let x = i as f64*self.sim.config.histo_width-1.0;
-                        let overlapp= (self.sim.overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
-                        [x,overlapp]
-                    }).collect(); 
-                    let overlapps_line = Line::new(overlapp).name("Overlapp");
-                    plot_ui.line(overlapps_line);
-                    let linked_overlapp:PlotPoints = (0..self.sim.linked_overlapp_histo.len()).map(|i|{
-                        let x = i as f64*self.sim.config.histo_width-1.0;
-                        let overlapp= (self.sim.linked_overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
-                        [x,overlapp]
-                    }).collect(); 
-                    let linked_overlapps_line = Line::new(linked_overlapp).name("Linked Overlapp");
-                    plot_ui.line(linked_overlapps_line);
-                });
+            if self.app_state.show_overlapp {
+                Window::new("Overlapp").show(ctx, |ui| {
+                    Plot::new("Overlapp_Plot")
+                    .legend(Legend::default())
+                    .show(ui, |plot_ui|{
+                        let overlapp:PlotPoints = (0..self.sim.overlapp_histo.len()).map(|i|{
+                            let x = i as f64*self.sim.config.histo_width-1.0;
+                            let overlapp= (self.sim.overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
+                            [x,overlapp]
+                        }).collect(); 
+                        let overlapps_line = Line::new(overlapp).name("Overlapp");
+                        plot_ui.line(overlapps_line);
+                        let linked_overlapp:PlotPoints = (0..self.sim.linked_overlapp_histo.len()).map(|i|{
+                            let x = i as f64*self.sim.config.histo_width-1.0;
+                            let overlapp= (self.sim.linked_overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
+                            [x,overlapp]
+                        }).collect(); 
+                        let linked_overlapps_line = Line::new(linked_overlapp).name("Linked Overlapp");
+                        plot_ui.line(linked_overlapps_line);
+                    });
 
-            });
+                });
+            };
             self.sim.simulation_step();
         });//CentralPanel
         self.sim.delete_queded_grids();
