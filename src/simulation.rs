@@ -34,12 +34,18 @@ impl PTEnviroment {
 
 pub struct equalTGridIds{
     pub T:f64,
+    pub was_switched: Vec<bool>,
+    pub current_pt_acceptance_prob: f64,
     pub ids: Vec<u32>
-}
+}     
 
 impl equalTGridIds{
     pub fn delete_id(&mut self, id:u32){
         self.ids.retain(|&existing_id|existing_id != id);
+    }
+    pub fn update_current_acceptance_prob(&mut self){
+        let sum = self.was_switched.iter().filter(|&&elem|elem==true).count();
+        self.current_pt_acceptance_prob = sum as f64 / self.was_switched.len() as f64;
     }
 }
 
@@ -109,8 +115,7 @@ impl Simulation{
 
     pub fn custom_run(&mut self){
         let grid_id1 = self.new_grid().unwrap();
-        let grid_id2 = self.new_grid().unwrap();
-        let grid_id3 = self.clone_grid(grid_id1);
+        self.pt_init(grid_id1).unwrap();
         self.running = true;
     }
 
@@ -159,6 +164,8 @@ impl Simulation{
         for k in 0..K{
             let mut equal_T_Ids = equalTGridIds{
                 T: current_T,
+                was_switched: Vec::new(),
+                current_pt_acceptance_prob: 0.0,
                 ids: Vec::new()};       
             for q in 0..Q{
                 let mut pt_id: u32;
@@ -202,11 +209,16 @@ impl Simulation{
 
         let mut rng = thread_rng();
 
+        let mut was_switched:Vec<bool> = Vec::new();
+
         let mut current_T:f64 = T_start;
         for k in 0..K-1{
+            /* let mut lower_equalTGrids = self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T).unwrap();
+            let mut higher_equalTGrids = self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T+delta_T).unwrap();
+             */
             let mut lower_ids = self.pt_enviroment.pt_ids.iter().find(|e|e.T == current_T).unwrap().ids.clone();
             let mut higher_ids = self.pt_enviroment.pt_ids.iter().find(|e|e.T == current_T+delta_T).unwrap().ids.clone();
-            self.pt_enviroment.pt_ids.retain(|e|(e.T != current_T) && (e.T != current_T+delta_T));
+            //self.pt_enviroment.pt_ids.retain(|e|(e.T != current_T) && (e.T != current_T+delta_T));
 
 
 
@@ -229,11 +241,27 @@ impl Simulation{
                     lower_ids.push(higher_id);
                     higher_ids.retain(|&e|e != higher_id);
                     higher_ids.push(lower_id);
+                    was_switched.push(true);
+                }else{
+                    was_switched.push(false);
                 }
 
             }
-            self.pt_enviroment.pt_ids.push(equalTGridIds { T: current_T, ids: lower_ids });
-            self.pt_enviroment.pt_ids.push(equalTGridIds { T: current_T+delta_T, ids: higher_ids });
+            self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T)
+                .unwrap().was_switched.append(&mut was_switched.clone());
+            self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T+delta_T)
+                .unwrap().was_switched.append(&mut was_switched);
+            self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T)
+                .unwrap().ids = lower_ids;
+            self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T+delta_T)
+                .unwrap().ids = higher_ids;
+
+            self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T)
+                .unwrap().update_current_acceptance_prob();
+            self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T+delta_T)
+                .unwrap().update_current_acceptance_prob();
+            //self.pt_enviroment.pt_ids.push(equalTGridIds { T: current_T, was_switched: vec![true,true], ids: lower_ids });
+            //self.pt_enviroment.pt_ids.push(equalTGridIds { T: current_T+delta_T, was_switched: vec![true,true], ids: higher_ids });
             current_T += delta_T;
 
 

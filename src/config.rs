@@ -41,8 +41,8 @@ pub struct PTConfig{
 impl Default for PTConfig{
     fn default() -> Self{
         return PTConfig{
-            num_T_steps: 10,
-            num_grids_equal_T: 3,
+            num_T_steps: 5,
+            num_grids_equal_T: 2,
             T_start: 0.5,
             T_end: 2.0,
         }

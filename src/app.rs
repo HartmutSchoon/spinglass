@@ -15,16 +15,23 @@ pub struct ParticleRect{
 struct AppState{
     pub sweep: grid::Sweep,
     pub show_overlapp: bool,
+    pub show_pt_acceptance: bool,
 }
 impl AppState{
-    pub fn new(sweep: grid::Sweep, show_overlapp: bool)->Self{
-        return Self {sweep, show_overlapp};
+    pub fn new(sweep: grid::Sweep)->Self{
+        return Self {
+            sweep,
+            show_overlapp:false,
+            show_pt_acceptance: false};
     }
 
 }
 impl Default for AppState {
     fn default() -> Self {
-        return Self { sweep: Default::default(), show_overlapp: false};
+        return Self { 
+            sweep: Default::default(),
+            show_overlapp: false,
+            show_pt_acceptance:false,};
     }
 }
 
@@ -188,12 +195,20 @@ impl eframe::App for App{
                     self.sim.queue_all_grids_deletion();
                 };
 
-                if ui.add(egui::Button::new("Show Overlapp")).clicked(){
-                    self.app_state.show_overlapp = true;
-                }
                 if ui.add(egui::Button::new("Start Custom Run")).clicked(){
                     self.sim.custom_run();
                 }
+            });
+            Frame::group(ui.style())
+            .show(ui,|ui|{
+                ui.label("Additional Windows");
+                if ui.add(egui::Button::new("Show Overlapp")).clicked(){
+                    self.app_state.show_overlapp = !self.app_state.show_overlapp;
+                }
+                if ui.add(egui::Button::new("Show PT Acceptance Ration")).clicked(){
+                    self.app_state.show_pt_acceptance = !self.app_state.show_pt_acceptance;
+                }
+
             });
         });
 
@@ -391,6 +406,16 @@ impl eframe::App for App{
 
                 });
             };
+            if self.app_state.show_pt_acceptance {
+                Window::new("Parallel Tempering").show(ctx, |ui| {
+                    for equalTGridIDs in self.sim.pt_enviroment.pt_ids.iter(){
+                        ui.label(format!(
+                            "T: {:.2}, Acceptance Prob: {:.2} %",
+                            equalTGridIDs.T,
+                            equalTGridIDs.current_pt_acceptance_prob*100.0));
+                    }
+                });
+            }
             self.sim.simulation_step();
         });//CentralPanel
         self.sim.delete_queded_grids();
