@@ -36,6 +36,10 @@ pub struct PTConfig{
     pub num_grids_equal_T: u32,
     pub T_start: f64,
     pub T_end: f64,
+    pub logic_L: f64,
+    pub logic_k: f64,
+    pub logic_T0: f64,
+    pub logic_dT0: f64,
 }
 
 impl Default for PTConfig{
@@ -45,6 +49,10 @@ impl Default for PTConfig{
             num_grids_equal_T: 2,
             T_start: 0.5,
             T_end: 2.0,
+            logic_L: 2.0,
+            logic_k: 2.0,
+            logic_T0: 1.8,
+            logic_dT0: 0.1,
         }
     }
 }

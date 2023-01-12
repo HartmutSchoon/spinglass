@@ -3,7 +3,7 @@ use std::io::Write;
 use std::ops::Deref;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
-use std::thread::{self, JoinHandle};
+use std::thread::{self, JoinHandle, current};
 
 use rand::seq::IteratorRandom;
 use rand::{Rng, thread_rng};
@@ -151,21 +151,16 @@ impl Simulation{
     }
 
     pub fn pt_init(&mut self, original_grid_id: u32)->Result<(),String>{
-        let K = self.pt_enviroment.config.num_T_steps;
+        //let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
-        let beta_start = 1.0/T_start;
         let T_end = self.pt_enviroment.config.T_end;
-        let beta_end= 1.0 / T_end;
-        //let delta_T: f64 = (T_end-T_start)/(K as f64 - 1.0);
-        let delta_beta: f64 = (beta_end-beta_start)/(K as f64 - 1.0);
 
         let original_grid = self.grid(original_grid_id).unwrap();
-        //let mut grid_config = self.default_grid_config.clone();
 
-        let mut current_beta:f64 = beta_start;
-        for k in 0..K{
-            let current_T:f64 = 1.0/current_beta;
+        let mut current_T = T_start;
+        while current_T < T_end{
+
             let mut equal_T_Ids = equalTGridIds{
                 T: current_T,
                 was_switched: Vec::new(),
@@ -173,7 +168,7 @@ impl Simulation{
                 ids: Vec::new()};       
             for q in 0..Q{
                 let mut pt_id: u32;
-                if k==0 && q == 0{
+                if current_T == T_start && q == 0{
                     pt_id = original_grid_id;
                 }else {
                     pt_id = self.clone_grid(original_grid_id)?;
@@ -182,18 +177,9 @@ impl Simulation{
                 equal_T_Ids.ids.push(pt_id);
             }
             self.pt_enviroment.pt_ids.push(equal_T_Ids);
-            current_beta += delta_beta;
+            current_T += self.pt_logistic_fun(current_T);
         }
         Ok(())
-    }
-
-    fn pt_acceptance_probability(
-        &mut self, T_lower:f64, T_higher:f64, energy_lower:f64, energy_higher:f64)
-        ->f64{
-        let mut acceptance_prob = f64::min(
-            1.0,
-            ((1.0/T_lower-1.0/T_higher)*(energy_lower-energy_higher)).exp());
-        return acceptance_prob
     }
 
     pub fn pt_exchange(&mut self){
@@ -208,29 +194,20 @@ impl Simulation{
         let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
-        let beta_start= 1.0/T_start;
         let T_end = self.pt_enviroment.config.T_end;
-        let beta_end = 1.0 / T_end;
-        //let delta_T: f64 = (T_end-T_start)/(K as f64 - 1.0);
-        let delta_beta: f64 = (beta_end-beta_start)/(K as f64 - 1.0);
 
         let mut rng = thread_rng();
 
         let mut was_switched:Vec<bool> = Vec::new();
 
-        
-        let mut current_beta:f64 = beta_start;
-        for k in 0..K-1{
-            let lower_T:f64 = 1.0/(current_beta+delta_beta);
-            let higher_T = 1.0/current_beta;
-            /* let mut lower_equalTGrids = self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T).unwrap();
-            let mut higher_equalTGrids = self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == current_T+delta_T).unwrap();
-             */
+        let mut current_T = T_start;
+        while current_T < T_end{
+            let delta_T = self.pt_logistic_fun(current_T);
+            let lower_T:f64 = current_T;
+            let higher_T = current_T + delta_T;
+
             let mut lower_ids = self.pt_enviroment.pt_ids.iter().find(|e|e.T == lower_T).unwrap().ids.clone();
             let mut higher_ids = self.pt_enviroment.pt_ids.iter().find(|e|e.T == higher_T).unwrap().ids.clone();
-            //self.pt_enviroment.pt_ids.retain(|e|(e.T != current_T) && (e.T != current_T+delta_T));
-
-
 
             for _ in 0..lower_ids.len(){
                 let lower_id = lower_ids.iter().choose(&mut rng).unwrap().clone();
@@ -273,13 +250,27 @@ impl Simulation{
                 .unwrap().ids = higher_ids;
 
 
-            //self.pt_enviroment.pt_ids.push(equalTGridIds { T: current_T, was_switched: vec![true,true], ids: lower_ids });
-            //self.pt_enviroment.pt_ids.push(equalTGridIds { T: current_T+delta_T, was_switched: vec![true,true], ids: higher_ids });
-            current_beta += delta_beta;
-
-
+            current_T += delta_T;
         }
 
+    }
+
+    fn pt_acceptance_probability(
+        &mut self, T_lower:f64, T_higher:f64, energy_lower:f64, energy_higher:f64)
+        ->f64{
+        let mut acceptance_prob = f64::min(
+            1.0,
+            ((1.0/T_lower-1.0/T_higher)*(energy_lower-energy_higher)).exp());
+        return acceptance_prob
+    }
+
+    fn pt_logistic_fun(& self, T:f64) -> f64{
+        let L = self.pt_enviroment.config.logic_L;
+        let k = self.pt_enviroment.config.logic_k;
+        let T0 = self.pt_enviroment.config.logic_T0;
+        let dT0 = self.pt_enviroment.config.logic_dT0;
+        let dT = L/(1.0 + (k*(T-T0)).exp())+dT0;
+        return dT
     }
 
     pub fn new_grid(&mut self)->Result<u32,String>{
