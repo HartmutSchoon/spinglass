@@ -5,6 +5,7 @@
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
+    //run_without_ui();
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
 
@@ -14,6 +15,16 @@ fn main() {
         native_options,
         Box::new(|cc| Box::new(spinglass::App::new(cc))),
     );
+}
+
+fn run_without_ui(){
+    use spinglass::Simulation;
+
+    let mut sim = Simulation::new();
+    sim.custom_run();
+    loop{
+        sim.simulation_step();
+    }
 }
 
 // when compiling to web using trunk.

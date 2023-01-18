@@ -1,6 +1,7 @@
 use crate::{config::*, particles::*};
 use log::{error, warn};
 use rand::{self, Rng};
+use rand_distr::Distribution;
 use std::fs;
 
 #[derive(Clone)]
@@ -9,6 +10,13 @@ pub struct History {
     pub T: VecDeque<f64>,
     pub energy: VecDeque<f64>,
     pub magnetization: VecDeque<i32>,
+    pub linked_overlapp: VecDeque<f64>,
+    /*These two are implementations of the equlibrium condition of this paper:
+    Monte Carlo simulations of spin glasses at low temperatures
+    Helmut G. Katzgraber, Matteo Palassini, and A. P. Young*/
+    pub katz_energy: VecDeque<f64>,
+    pub av_linked_overlapp: VecDeque<f64>,
+    pub av_katz_energy: VecDeque<f64>,
     current_size: usize,
     capacity: usize,
 }
@@ -19,11 +27,24 @@ impl History {
             T: VecDeque::new(),
             energy: VecDeque::new(),
             magnetization: VecDeque::new(),
+            linked_overlapp: VecDeque::new(),
+            katz_energy: VecDeque::new(),
+            av_linked_overlapp: VecDeque::new(),
+            av_katz_energy: VecDeque::new(),
             current_size: 0,
             capacity,
+
         };
     }
-    pub fn add(&mut self, run: u32, T: f64, energy: f64, magnetization: i32) {
+    pub fn add(&mut self,
+        run: u32,
+        T: f64,
+        energy: f64,
+        magnetization: i32,
+        linked_overlapp: f64,
+        katz_energy: f64,
+        av_linked_overlapp: f64,
+        av_katz_energy: f64) {
         if self.capacity == 0 {
             return;
         }
@@ -35,6 +56,10 @@ impl History {
         self.T.push_back(T);
         self.energy.push_back(energy);
         self.magnetization.push_back(magnetization);
+        self.linked_overlapp.push_back(linked_overlapp);
+        self.katz_energy.push_back(katz_energy);
+        self.av_linked_overlapp.push_back(av_linked_overlapp);
+        self.av_katz_energy.push_back(av_katz_energy);
 
         self.current_size += 1;
     }
@@ -47,6 +72,10 @@ impl History {
         self.T.pop_front();
         self.energy.pop_front();
         self.magnetization.pop_front();
+        self.linked_overlapp.pop_front();
+        self.katz_energy.pop_front();
+        self.av_linked_overlapp.pop_front();
+        self.av_katz_energy.pop_front();
 
         self.current_size -= 1;
     }
@@ -195,7 +224,7 @@ impl Grid {
             .link_all_particles()
             .init_output_file();
         //grid.init_particles(grid.config.num_particles).link_all_particles();
-        grid.update_history();
+        grid.update_history(0.0);
         return Ok(grid);
     }
     #[cfg(not(target_arch = "wasm32"))]
@@ -209,7 +238,7 @@ impl Grid {
                 .open(path)
                 .expect("Unable to open file"),
         );
-        let header = String::from("Run\tT\tEnergy\tMagnetization\n");
+        let header = String::from("Run\tT\tEnergy\tMagnetization\tlinked Overlapp\n");
 
         self.output_file
             .as_mut()
@@ -224,9 +253,15 @@ impl Grid {
         return;
     }
 
-    fn write_to_output_file(&mut self, run: u32, T: f64, energy: f64, magnetization: i32) {
+    fn write_to_output_file(&mut self,
+        run: u32,
+        T: f64,
+        energy: f64,
+        magnetization: i32,
+        linked_overlapp:f64) {
         if let Some(file) = self.output_file.as_mut() {
-            let output = String::from(format!("{}\t{}\t{}\t{}\n", run, T, energy, magnetization));
+            let output = String::from(format!("{}\t{}\t{}\t{}\t{}\n",
+                 run, T, energy, magnetization,linked_overlapp));
             file.write_all(output.as_bytes());
         }
     }
@@ -451,11 +486,16 @@ impl Grid {
 
         //check if both limits from config are the same. If so don't use rng
         //and set coupling to constant
-        let coupling = match self.config.coupling_limits[0] == self.config.coupling_limits[1] {
+        /* let coupling = match self.config.coupling_limits[0] == self.config.coupling_limits[1] {
             true => self.config.coupling_limits[0],
             false => rand::thread_rng()
                 .gen_range(self.config.coupling_limits[0]..self.config.coupling_limits[1]),
-        };
+        }; */
+
+        let mean = self.config.coupling_mean;
+        let std_dev = self.config.coupling_variance.sqrt();
+        
+        let coupling = rand_distr::Normal::new(mean, std_dev).unwrap().sample(&mut rand::thread_rng());
 
         //create link
         let link_from1_to2 = Link::new(grid_id2, coupling);
@@ -524,7 +564,7 @@ impl Grid {
                     Some(particle) => f64::from(particle.spin()),
                     None => 0.0,
                 };
-                linked_overlap += own_spin * own_neighbour_spin * other_spin * other_neighbour_spin;
+                linked_overlap += 0.5 * own_spin * own_neighbour_spin * other_spin * other_neighbour_spin;
             } 
         }
         return Ok(linked_overlap);
@@ -583,6 +623,39 @@ impl Grid {
             }
         }
         return spin_sum;
+    }
+
+    pub fn calc_av_linked_overlapp(&self)->f64{
+        //this function computes the average over to "last half" of all data value of the linked overlapp.
+        let start_idx = ((self.history.current_size as f64)/2.0) as usize;
+        let end_idx = self.history.current_size;
+        let mut sum = 0.0;
+        for idx in start_idx..end_idx{
+            sum += self.history.linked_overlapp[idx];
+        }
+        return sum/(end_idx-start_idx) as f64;
+    }
+
+    pub fn calc_av_energy(&self)->f64{
+        //this function computes the average over to "last half" of all data value of the linked overlapp.
+        let start_idx = ((self.history.current_size as f64)/2.0) as usize;
+        let end_idx = self.history.current_size;
+        let mut sum = 0.0;
+        for idx in start_idx..end_idx{
+            sum += self.history.energy[idx];
+        }
+        return sum/(end_idx-start_idx) as f64;
+    }
+
+    pub fn calc_av_katz(&self)->f64{
+        //this function computes the average over to "last half" of all data value of the linked overlapp.
+        let start_idx = ((self.history.current_size as f64)/2.0) as usize;
+        let end_idx = self.history.current_size;
+        let mut sum = 0.0;
+        for idx in start_idx..end_idx{
+            sum += self.history.katz_energy[idx];
+        }
+        return sum/(end_idx-start_idx) as f64;
     }
 
     pub fn metropolis_step(&mut self) -> Option<usize> {
@@ -878,6 +951,19 @@ impl Grid {
         return Ok(matching_positions.first().unwrap());
     }
 
+    pub fn shuffle_spins(&mut self){
+        //function to randomly set all spins in a grid without changing the links
+        // between the spins
+        for grid_pos in self. grid_positions.iter_mut(){
+            match grid_pos.particle.as_mut(){
+                Some(particle) => {
+                    particle.spin = rand::thread_rng().gen()
+                }
+                None => (),
+            }
+        }
+    }
+
     pub fn grid_positions(&self) -> &Vec<GridPos> {
         return &self.grid_positions;
     }
@@ -899,14 +985,20 @@ impl Grid {
     pub fn set_id(&mut self, id: u32) {
         self.id = id
     }
-    pub fn update_history(&mut self) {
+    pub fn update_history(&mut self, linked_overlapp:f64) {
         let run = self.run;
         let T = self.T;
         let energy = self.calc_energy();
         let magnetization = self.calc_magnetization();
+        let av_energy = self.calc_av_energy();
+        let katz_energy = 
+            1.0-self.T*energy.abs()/(self.dimensions.len() as f64 * self.config.coupling_variance*self.capacity as f64);
+        let av_linked_overlapp = self.calc_av_linked_overlapp();
+        let av_katz_energy = self.calc_av_katz();
 
-        self.history.add(run, T, energy, magnetization);
-        self.write_to_output_file(run, T, energy, magnetization);
+        self.history.add(
+            run, T, energy, magnetization, linked_overlapp, katz_energy, av_linked_overlapp, av_katz_energy);
+        self.write_to_output_file(run, T, energy, magnetization,linked_overlapp);
     }
     pub fn history(&self) -> &History {
         return &self.history;

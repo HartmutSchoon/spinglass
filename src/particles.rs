@@ -92,7 +92,7 @@ impl From<&Spin> for i32{
 #[derive(Clone)]
 pub struct Particle{
     id: u32,
-    spin:Spin,
+    pub spin:Spin,
     links: Vec<Link>,
 }
 

@@ -1,17 +1,18 @@
+use std::collections::VecDeque;
 use std::fs;
-use std::io::Write;
-use std::ops::Deref;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle, current};
 
 use rand::seq::IteratorRandom;
+use rand::seq::SliceRandom;
 use rand::{Rng, thread_rng};
 
 use crate::config::{self, SimulationConfig, GridConfig, PTConfig};
 use crate::grid::{Grid,History, Sweep};
 
 
+#[derive(Clone)]
 pub struct PTEnviroment{
     pub config: PTConfig,
     pub pt_ids: Vec<equalTGridIds>,
@@ -32,9 +33,10 @@ impl PTEnviroment {
 
 }
 
+#[derive(Clone)]
 pub struct equalTGridIds{
     pub T:f64,
-    pub was_switched: Vec<bool>,
+    pub was_switched: VecDeque<bool>,
     pub current_pt_acceptance_prob: f64,
     pub ids: Vec<u32>
 }     
@@ -46,6 +48,19 @@ impl equalTGridIds{
     pub fn update_current_acceptance_prob(&mut self){
         let sum = self.was_switched.iter().filter(|&&elem|elem==true).count();
         self.current_pt_acceptance_prob = sum as f64 / self.was_switched.len() as f64;
+    }
+
+    pub fn add_single_switch(&mut self, switch: bool){
+        if self.was_switched.len() >= 1000 {
+            self.was_switched.pop_front();
+        }
+        self.was_switched.push_back(switch)
+    }
+
+    pub fn add_vec_switch(&mut self, switch_vec: Vec<bool>){
+        for &elem in switch_vec.iter(){
+            self.add_single_switch(elem);
+        }
     }
 }
 
@@ -110,6 +125,7 @@ impl Simulation{
     pub fn simulation_step(&mut self){
         self.thread_step();
         self.pt_exchange();
+        self.update_all_grid_histories();
         self.update_overlapp_histogramm(0.5);
     }
 
@@ -119,7 +135,65 @@ impl Simulation{
         self.running = true;
     }
 
+    pub fn update_all_grid_histories(&mut self){
+        if self.running == false {return}
+        for grid_id in self.current_grid_ids.clone().iter(){
+            // we need to check if grid_id is in a pt_enviroment
+            let grid_ref = self.grid(*grid_id).unwrap();
+            let T = grid_ref.T();
+            let capacity = grid_ref.capacity();
+            let mut current_pt_ids= self.pt_enviroment.pt_ids.clone();
+            //this one now only stores the one equalTIds where its T is equal to this grid T
+            current_pt_ids.retain(|elem|elem.T == T);
+            //now call first() to see if there is a element
+            match current_pt_ids.first(){
+                Some(equalTGriddIds) =>{
+                    //We found a equalT struct with this T. Now we need to find our grid_id
+                    let mut other_ids = equalTGriddIds.ids.clone();
+                    let len = other_ids.len();
+                    other_ids.retain(|&elem|elem != *grid_id);
+                    //if other_ids didn't shrink in size the current grid_id wasn't in a pt_enviroment
+                    //therefore there can't be a linked overlapp
+                    //it would be possible to create a equalTGrid with only this grid in it
+                    //Then it also wouldn't be possible to compute the linked overlapp
+                    // then the size of other_ids would be 0
+                    if len == other_ids.len() || other_ids.len() == 0{
+                        self.grid_mut(*grid_id).unwrap().update_history(f64::NAN)
+                    }
+                    
+                    //sample some other id at the same temperature
+                    let other_id = other_ids.choose(&mut rand::thread_rng()).unwrap();
+
+                    //calc linked overlapp
+                    let linked_overlapp = self.grid(*grid_id).unwrap().calc_linked_overlap(
+                        self.grid(*other_id).unwrap()).unwrap();
+    
+                    //norm it by num of links
+                    //z_half is the half of the number of links each particle has. This corresponds to
+                    //the number of unique links per particle
+                    //see :Monte Carlo simulations of spin glasses at low temperatures
+                    //Helmut G. Katzgraber, Matteo Palassini, and A. P. Young
+                    let z_half = self.grid(*grid_id).unwrap().dimensions().len() as f64;
+                    let normed_linked_overlapp = linked_overlapp/(z_half*capacity as f64);
+                    //let grid pdate history with this overlapp
+                    self.grid_mut(*grid_id).unwrap().update_history(normed_linked_overlapp);
+
+                },
+                None => {
+                    //we did not find a equalTGridIDs with matching T -> grid isnt in Pt enviroment
+                    //->no overlapp can be calculated
+                    self.grid_mut(*grid_id).unwrap().update_history(f64::NAN);
+                },
+            }
+        }
+    }
+
+
     pub fn update_overlapp_histogramm(&mut self, target_T: f64){
+        /* This function calculates the linked overlap for a target temperature
+        between the first and every other grid existing at this temperature.
+        It adds a normed linked overlap to self.linked_overlapp_histo, which ist 
+        later used to draw a overlapp histogramm. */
         if self.running == false {return}
         match self.pt_enviroment.pt_ids.iter().find(|&elem|elem.T == target_T){
             None => return,
@@ -151,19 +225,34 @@ impl Simulation{
     }
 
     pub fn pt_init(&mut self, original_grid_id: u32)->Result<(),String>{
-        //let K = self.pt_enviroment.config.num_T_steps;
+        
+        let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
+        //let beta_start = 1.0/T_start;
         let T_end = self.pt_enviroment.config.T_end;
+        //let beta_end= 1.0 / T_end;
+        //let delta_beta: f64 = (beta_end-beta_start)/(K as f64 - 1.0);
+
 
         let original_grid = self.grid(original_grid_id).unwrap();
 
         let mut current_T = T_start;
-        while current_T < T_end{
+        //let mut current_beta:f64 = beta_start;
+        loop{
+        //for k in 0..K{
+            //let current_T:f64 = 1.0/current_beta;
+            if current_T> T_end{
+                break
+            }
+
+            let delta_T = self.pt_lin_fun(current_T);
+            //let delta_T = self.pt_logistic_fun(current_T);
+            //let delta_T = (T_end-T_start)/(K as f64 -1.0);
 
             let mut equal_T_Ids = equalTGridIds{
                 T: current_T,
-                was_switched: Vec::new(),
+                was_switched: VecDeque::new(),
                 current_pt_acceptance_prob: 0.0,
                 ids: Vec::new()};       
             for q in 0..Q{
@@ -173,11 +262,14 @@ impl Simulation{
                 }else {
                     pt_id = self.clone_grid(original_grid_id)?;
                     self.grid_mut(pt_id).unwrap().set_T(current_T);
+                    self.grid_mut(pt_id).unwrap().shuffle_spins();
                 }
                 equal_T_Ids.ids.push(pt_id);
             }
             self.pt_enviroment.pt_ids.push(equal_T_Ids);
-            current_T += self.pt_logistic_fun(current_T);
+
+            current_T += delta_T;
+            //current_beta += delta_beta;
         }
         Ok(())
     }
@@ -194,17 +286,30 @@ impl Simulation{
         let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
+        //let beta_start = 1.0/T_start;
         let T_end = self.pt_enviroment.config.T_end;
+        //let beta_end= 1.0 / T_end;
+        //let delta_beta: f64 = (beta_end-beta_start)/(K as f64 - 1.0);
 
         let mut rng = thread_rng();
 
-        let mut was_switched:Vec<bool> = Vec::new();
-
         let mut current_T = T_start;
-        while current_T < T_end{
-            let delta_T = self.pt_logistic_fun(current_T);
+        //let mut current_beta:f64 = beta_start;
+        loop{
+        //for k in 0..K-1{
+            let mut was_switched:Vec<bool> = Vec::new();
+
+            let delta_T = self.pt_lin_fun(current_T);
+            //let delta_T = self.pt_logistic_fun(current_T);
+            //let delta_T = (T_end-T_start)/(K as f64 -1.0);
             let lower_T:f64 = current_T;
             let higher_T = current_T + delta_T;
+            if higher_T > T_end{
+                break
+            }
+
+            /* let lower_T:f64 = 1.0/current_beta;
+            let higher_T = 1.0/(current_beta+delta_beta); */
 
             let mut lower_ids = self.pt_enviroment.pt_ids.iter().find(|e|e.T == lower_T).unwrap().ids.clone();
             let mut higher_ids = self.pt_enviroment.pt_ids.iter().find(|e|e.T == higher_T).unwrap().ids.clone();
@@ -234,9 +339,9 @@ impl Simulation{
             }
 
             self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == lower_T)
-                .unwrap().was_switched.append(&mut was_switched.clone());
+                .unwrap().add_vec_switch(was_switched.clone());
             self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == higher_T)
-                .unwrap().was_switched.append(&mut was_switched);
+                .unwrap().add_vec_switch(was_switched);
             
             self.pt_enviroment.pt_ids.iter_mut().find(|e|e.T == lower_T)
                 .unwrap().update_current_acceptance_prob();
@@ -250,6 +355,7 @@ impl Simulation{
                 .unwrap().ids = higher_ids;
 
 
+            //current_beta += delta_beta;
             current_T += delta_T;
         }
 
@@ -269,7 +375,15 @@ impl Simulation{
         let k = self.pt_enviroment.config.logic_k;
         let T0 = self.pt_enviroment.config.logic_T0;
         let dT0 = self.pt_enviroment.config.logic_dT0;
-        let dT = L/(1.0 + (k*(T-T0)).exp())+dT0;
+        let dT = L/(1.0 + (-k*(T-T0)).exp())+dT0;
+        return dT
+    }
+
+    fn pt_lin_fun(& self, T:f64) -> f64{
+        //let L = self.pt_enviroment.config.logic_L;
+        let k = self.pt_enviroment.config.logic_k;
+        let dT0 = self.pt_enviroment.config.logic_dT0;
+        let dT = k*T+dT0;
         return dT
     }
 
@@ -363,7 +477,7 @@ impl Simulation{
                     thread_grid.metropolis_step();
                 }
                 //calculate and save temperature and energy of grid
-                thread_grid.update_history();
+                //thread_grid.update_history();
                 //send results
                 thread_tx.send(thread_grid).unwrap();
             });
@@ -422,3 +536,6 @@ impl Simulation{
     }
 
 }
+
+
+

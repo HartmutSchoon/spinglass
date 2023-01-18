@@ -11,13 +11,14 @@ authors = ["Hartmut Schoon <hartmut.schoon@outlook.de>"]
 toml = "0.5.9"
 serde = { version = "1.0.145", features = ["derive"] }
 rand = "0.8.5"
+rand_distr = "0.4.3"
 log = "0.4.17"
 egui = "0.20.0"
 eframe = { version = "0.20.0", default-dependencies = false, features = [
-    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    #"accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
-    "persistence",   # Enable restoring app state when restarting the app.
+    #"persistence",   # Enable restoring app state when restarting the app.
 ] }
 
 # native:

@@ -45,14 +45,14 @@ pub struct PTConfig{
 impl Default for PTConfig{
     fn default() -> Self{
         return PTConfig{
-            num_T_steps: 5,
-            num_grids_equal_T: 2,
+            num_T_steps: 10,
+            num_grids_equal_T: 4,
             T_start: 0.5,
-            T_end: 2.0,
-            logic_L: 2.0,
-            logic_k: 2.0,
+            T_end: 0.8,
+            logic_L: 0.8,
+            logic_k: 0.035,
             logic_T0: 1.8,
-            logic_dT0: 0.1,
+            logic_dT0: 0.03,
         }
     }
 }
@@ -62,7 +62,8 @@ pub struct GridConfig{
     pub grid_dimensions:Vec<u16>,
     pub particle_position_method: ParticlePositionMethod,
     pub num_particles:u32,
-    pub coupling_limits: [f64;2],
+    pub coupling_mean: f64,
+    pub coupling_variance: f64,
     pub T:f64,
     pub spin_up_init: bool,
     pub external_field:f64,
@@ -75,7 +76,8 @@ impl Default for GridConfig{
             grid_dimensions:vec![10,10,10],
             particle_position_method: ParticlePositionMethod::FillGrid,
             num_particles:1000,
-            coupling_limits: [1.0, 1.0],
+            coupling_mean: 0.0,
+            coupling_variance: 1.0,
             T:0.5,
             spin_up_init: false,
             external_field:0.0,

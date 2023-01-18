@@ -160,16 +160,13 @@ impl eframe::App for App{
                 ui.add(DragValue::new(&mut external_field).speed(0.01).prefix("External field: "));
                 self.sim.default_grid_config.external_field = external_field as f64;
 
-                let mut min_coupling:f32 = self.sim.default_grid_config.coupling_limits[0] as f32;
-                ui.add(DragValue::new(&mut min_coupling).speed(0.01).prefix("Min coupling: "));
-                self.sim.default_grid_config.coupling_limits[0] = min_coupling as f64;
-
-                let mut max_coupling:f32 = self.sim.default_grid_config.coupling_limits[1] as f32;
-                ui.add(DragValue::new(&mut max_coupling).
-                        speed(0.01).prefix("Max coupling:: ").clamp_range(min_coupling..=f32::INFINITY));
-                self.sim.default_grid_config.coupling_limits[1] = max_coupling as f64;
-
-
+                let mut coupling_mean:f32 = self.sim.default_grid_config.coupling_mean as f32;
+                ui.add(DragValue::new(&mut coupling_mean).speed(0.01).prefix("Coupling mean: "));
+                self.sim.default_grid_config.coupling_mean = coupling_mean as f64;
+                
+                let mut coupling_variance:f32 = self.sim.default_grid_config.coupling_variance as f32;
+                ui.add(DragValue::new(&mut coupling_variance).speed(0.01).prefix("Coupling variance: "));
+                self.sim.default_grid_config.coupling_variance = coupling_variance as f64;
 
                 if ui.add(egui::Button::new("Create!")).clicked(){
                     self.sim.new_grid();
@@ -260,10 +257,10 @@ impl eframe::App for App{
                                         ui.label(format!("Clone of Grid {}",id));
                                     }
 
-                                    let coupling_limits = self.sim.grid(grid_id).unwrap().config.coupling_limits;
-                                    ui.label(format!("Couplings: {:.2} - {:.2}",coupling_limits[0],coupling_limits[1]));
-                                    
-            
+                                    let coupling_mean = self.sim.grid(grid_id).unwrap().config.coupling_mean;
+                                    let coupling_variance = self.sim.grid(grid_id).unwrap().config.coupling_variance;
+                                    ui.label(format!("Coupling mean: {:.2}", coupling_mean));
+                                    ui.label(format!("Coupling variance: {:.2}", coupling_variance));
             
                                     let mut T = self.sim.grid(grid_id).unwrap().T();
                                     ui.add(DragValue::new(&mut T).speed(0.01).prefix("Temperature: "));
@@ -358,14 +355,14 @@ impl eframe::App for App{
                     .show(ui, |plot_ui|{
                         let history = self.sim.history_by_id(grid_id).unwrap();
                         let T:PlotPoints = (0..history.current_size()).map(|i|{
-                            let x = (i as f64 * self.sim.config.thread_steps as f64);
+                            let x = i as f64;
                             let T= history.T[i];
                             [x,T]
                             }).collect();
                         let t_line=Line::new(T).name("Temperature");
                         plot_ui.line(t_line);
                         let E:PlotPoints = (0..history.current_size()).map(|i|{
-                            let x = (i as f64 * self.sim.config.thread_steps as f64);
+                            let x = i as f64;
                             let energy= history.energy[i]/self.sim.grid(grid_id).unwrap().capacity as f64;
                             [x,energy]
                         }).collect();
@@ -373,12 +370,45 @@ impl eframe::App for App{
                         plot_ui.line(e_line);
 
                         let magnetization:PlotPoints = (0..history.current_size()).map(|i|{
-                            let x = (i as f64 * self.sim.config.thread_steps as f64);
+                            let x = i as f64;
                             let mag= history.magnetization[i] as f64/self.sim.grid(grid_id).unwrap().capacity as f64;
                             [x,mag]
                         }).collect();
                         let mag_line = Line::new(magnetization).name("Magnetization");
                         plot_ui.line(mag_line);
+
+                        let linked_overlapp:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let overlapp = history.linked_overlapp[i] as f64;
+                            [x,overlapp]
+                        }).collect();
+                        let overlapp_line = Line::new(linked_overlapp).name("Linked Overlapp");
+                        plot_ui.line(overlapp_line);
+
+                        let katz_energy:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let katz_en = history.katz_energy[i] as f64;
+                            [x,katz_en]
+                        }).collect();
+                        let ke_line = Line::new(katz_energy).name("1-2T|U|/zJ^2");
+                        plot_ui.line(ke_line);
+
+                        let av_linked_overlapp:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let overlapp = history.av_linked_overlapp[i] as f64;
+                            [x,overlapp]
+                        }).collect();
+                        let overlapp_line = Line::new(av_linked_overlapp).name("<ql>");
+                        plot_ui.line(overlapp_line);
+
+                        let av_katz_energy:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let av_katz_en = history.av_katz_energy[i] as f64;
+                            [x,av_katz_en]
+                        }).collect();
+                        let av_ke_line = Line::new(av_katz_energy).name("<1-2T|U|/zJ^2>");
+                        plot_ui.line(av_ke_line); 
+                        
                     });
                 
                 });
