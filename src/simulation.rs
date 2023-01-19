@@ -82,21 +82,17 @@ impl Simulation{
         let global_config = config::load();
         let config = global_config.simulation_config.clone();
         let default_grid_config = global_config.grid_config.clone();
-        let mut grids = Vec::new();
-        let mut current_grid_ids : Vec<u32> = Vec::new();
-        for grid_id in 0..config.num_grids{
-            grids.push(Grid::new(default_grid_config.clone(),grid_id).unwrap());
-            current_grid_ids.push(grid_id);
-        }
-        let mut grids_to_delete: Vec<u32> = Vec::new();
+        let grids = Vec::new();
+        let current_grid_ids : Vec<u32> = Vec::new();
+        let grids_to_delete: Vec<u32> = Vec::new();
         let running = false;
-        let mut pt_enviroment = PTEnviroment::new(global_config.pt_config.clone());
+        let pt_enviroment = PTEnviroment::new(global_config.pt_config.clone());
 
         let num_bins = (2.0/config.histo_width+1.0).floor() as usize;
         let overlapp_histo = vec![0;num_bins];
         let linked_overlapp_histo = vec![0;num_bins];
         
-        let mut sim =  Simulation{
+        let sim =  Simulation{
             config,
             default_grid_config,
             grids,
@@ -132,6 +128,7 @@ impl Simulation{
     pub fn custom_run(&mut self){
         let grid_id1 = self.new_grid().unwrap();
         self.pt_init(grid_id1).unwrap();
+        self.update_all_grid_histories();
         self.running = true;
     }
 
@@ -370,20 +367,11 @@ impl Simulation{
         return acceptance_prob
     }
 
-    fn pt_logistic_fun(& self, T:f64) -> f64{
-        let L = self.pt_enviroment.config.logic_L;
-        let k = self.pt_enviroment.config.logic_k;
-        let T0 = self.pt_enviroment.config.logic_T0;
-        let dT0 = self.pt_enviroment.config.logic_dT0;
-        let dT = L/(1.0 + (-k*(T-T0)).exp())+dT0;
-        return dT
-    }
-
     fn pt_lin_fun(& self, T:f64) -> f64{
         //let L = self.pt_enviroment.config.logic_L;
-        let k = self.pt_enviroment.config.logic_k;
-        let dT0 = self.pt_enviroment.config.logic_dT0;
-        let dT = k*T+dT0;
+        let m = self.pt_enviroment.config.linear_m;
+        let dT0 = self.pt_enviroment.config.linear_dT0;
+        let dT = m*T+dT0;
         return dT
     }
 
@@ -482,7 +470,7 @@ impl Simulation{
                 thread_tx.send(thread_grid).unwrap();
             });
         }
-        //original Sender needs to be dropped. Every grid copied from this one, so tx isn't used.
+        //original sender needs to be dropped. Every grid copied from this one, so tx isn't used.
         //if it isn't dropped we get a deadlock because rx waits for tx
         drop(tx);
 

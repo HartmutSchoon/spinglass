@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 
 def main():
+    #the data was produced by looking at <A> when T ist spaced linear between 0 and 4
+    #looks linear -> logistic function was used because "wrong" data looked like it
     data = pd.read_table("T_linear_0_4.0.tsv")
     plt.plot(data["T"], data["A_mean"] )
     plt.xlabel("T")
@@ -22,6 +24,7 @@ def main():
     print("BP")
     
 def logistic_define():
+    """Look at deltaT(T) when using a logistics function"""
     T_start = 0.5
     T_end = 4
     T = np.linspace(T_start, T_end, num= 100)
@@ -39,6 +42,8 @@ def logistic_define():
     print("BP")
     
 def t_test():
+    """function to test how deltaT(T) looks like when choosing deltaT with constant
+    spacing in beta=1/T"""
     K = 100
     t_start = 0.5
     t_end = 2

@@ -2,10 +2,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 // hide console window on Windows in release
 
+use core::num;
+
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     //run_without_ui();
+    run_with_ui();
+}
+
+fn run_with_ui(){
+    
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
 
@@ -19,11 +26,22 @@ fn main() {
 
 fn run_without_ui(){
     use spinglass::Simulation;
+    use std::time::{Duration, Instant};
 
+    let num_sweeps = 100_000;
     let mut sim = Simulation::new();
     sim.custom_run();
-    loop{
+
+    let start = Instant::now();
+    let mut duration:Duration;
+    
+    for run in 0..num_sweeps{
         sim.simulation_step();
+        duration = start.elapsed();
+        println!("Completed run {}/{}, ETC: {:.2}s",
+            run+1,
+            num_sweeps,
+            (num_sweeps-run) as f64 * duration.as_secs_f64()/run as f64 );
     }
 }
 

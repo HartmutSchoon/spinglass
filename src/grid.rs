@@ -224,7 +224,7 @@ impl Grid {
             .link_all_particles()
             .init_output_file();
         //grid.init_particles(grid.config.num_particles).link_all_particles();
-        grid.update_history(0.0);
+        //grid.update_history(0.0);
         return Ok(grid);
     }
     #[cfg(not(target_arch = "wasm32"))]
@@ -238,7 +238,7 @@ impl Grid {
                 .open(path)
                 .expect("Unable to open file"),
         );
-        let header = String::from("Run\tT\tEnergy\tMagnetization\tlinked Overlapp\n");
+        let header = String::from("run\tT\tenergy\tmagnetization\tlinked_overlapp\n");
 
         self.output_file
             .as_mut()
@@ -253,7 +253,7 @@ impl Grid {
         return;
     }
 
-    fn write_to_output_file(&mut self,
+    pub fn write_to_output_file(&mut self,
         run: u32,
         T: f64,
         energy: f64,

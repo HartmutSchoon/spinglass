@@ -36,10 +36,10 @@ pub struct PTConfig{
     pub num_grids_equal_T: u32,
     pub T_start: f64,
     pub T_end: f64,
-    pub logic_L: f64,
-    pub logic_k: f64,
-    pub logic_T0: f64,
-    pub logic_dT0: f64,
+    //deltaT(T) is is produced with linear spacing-> deltaT grows linear
+    //delta(T) = linear_m*T+linear_dT0
+    pub linear_m: f64,
+    pub linear_dT0:f64,
 }
 
 impl Default for PTConfig{
@@ -49,10 +49,8 @@ impl Default for PTConfig{
             num_grids_equal_T: 4,
             T_start: 0.5,
             T_end: 0.8,
-            logic_L: 0.8,
-            logic_k: 0.035,
-            logic_T0: 1.8,
-            logic_dT0: 0.03,
+            linear_m: 0.035,
+            linear_dT0: 0.03,
         }
     }
 }
@@ -73,15 +71,15 @@ pub struct GridConfig{
 impl Default for GridConfig{
     fn default() -> Self{
         return GridConfig{
-            grid_dimensions:vec![10,10,10],
+            grid_dimensions:vec![100,100],
             particle_position_method: ParticlePositionMethod::FillGrid,
             num_particles:1000,
-            coupling_mean: 0.0,
-            coupling_variance: 1.0,
+            coupling_mean: 1.0,
+            coupling_variance: 0.0,
             T:0.5,
             spin_up_init: false,
             external_field:0.0,
-            history_capacity:1000,
+            history_capacity:10_000,
         }
     }
 }
@@ -98,7 +96,7 @@ impl Default for SimulationConfig{
     fn default() -> Self{
         return SimulationConfig{
             num_grids:0,
-            thread_steps:10000,
+            thread_steps:1000,
             num_steps:100000,
             histo_width: 0.1,
         }
