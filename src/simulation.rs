@@ -119,7 +119,8 @@ impl Simulation{
     }    
 
     pub fn simulation_step(&mut self){
-        self.thread_step();
+        //self.thread_step();
+        self.not_threaded_step();
         self.pt_exchange();
         self.update_all_grid_histories();
         self.update_overlapp_histogramm(0.5);
@@ -223,7 +224,6 @@ impl Simulation{
 
     pub fn pt_init(&mut self, original_grid_id: u32)->Result<(),String>{
         
-        let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
         //let beta_start = 1.0/T_start;
@@ -280,7 +280,6 @@ impl Simulation{
             return
         }
 
-        let K = self.pt_enviroment.config.num_T_steps;
         let Q = self.pt_enviroment.config.num_grids_equal_T;
         let T_start = self.pt_enviroment.config.T_start;
         //let beta_start = 1.0/T_start;
@@ -433,11 +432,6 @@ impl Simulation{
 
     pub fn num_grids(&self)->u32{return self.grids.len() as u32}
 
-    pub fn run(&mut self){
-        for _ in 0..self.config.num_steps{
-            self.thread_step();
-        }
-    }
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn thread_step(&mut self){
@@ -480,6 +474,14 @@ impl Simulation{
         };
 
 
+    }
+
+    pub fn not_threaded_step(&mut self){
+        for grid in self.grids.iter_mut(){
+            for _ in 0..self.config.thread_steps{
+                grid.metropolis_step();
+            }
+        }
     }
 
     #[cfg(target_arch = "wasm32")]

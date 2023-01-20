@@ -32,7 +32,6 @@ impl Default for Config{
 
 #[derive(Deserialize,Clone)]
 pub struct PTConfig{
-    pub num_T_steps: u32,
     pub num_grids_equal_T: u32,
     pub T_start: f64,
     pub T_end: f64,
@@ -45,7 +44,6 @@ pub struct PTConfig{
 impl Default for PTConfig{
     fn default() -> Self{
         return PTConfig{
-            num_T_steps: 10,
             num_grids_equal_T: 4,
             T_start: 0.5,
             T_end: 0.8,
@@ -71,11 +69,11 @@ pub struct GridConfig{
 impl Default for GridConfig{
     fn default() -> Self{
         return GridConfig{
-            grid_dimensions:vec![100,100],
+            grid_dimensions:vec![10,10,10],
             particle_position_method: ParticlePositionMethod::FillGrid,
             num_particles:1000,
-            coupling_mean: 1.0,
-            coupling_variance: 0.0,
+            coupling_mean: 0.0,
+            coupling_variance: 1.0,
             T:0.5,
             spin_up_init: false,
             external_field:0.0,
@@ -88,7 +86,7 @@ impl Default for GridConfig{
 pub struct SimulationConfig{
     pub num_grids:u32,
     pub thread_steps:u32,
-    pub num_steps:u32,
+    //pub num_steps:u32,
     pub histo_width: f64,
 }
 
@@ -97,7 +95,7 @@ impl Default for SimulationConfig{
         return SimulationConfig{
             num_grids:0,
             thread_steps:1000,
-            num_steps:100000,
+            //num_steps:10,
             histo_width: 0.1,
         }
     }

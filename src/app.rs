@@ -319,11 +319,6 @@ impl eframe::App for App{
                                 ui.vertical(|ui|{
                                     ui.label("Parallel Tempering");
 
-                    
-                                    ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.num_T_steps)
-                                        .speed(0.1)
-                                        .prefix("#Different temperatures: "));
-
                                     ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.num_grids_equal_T)
                                         .speed(0.1)
                                         .prefix("#Grids per temperature: "));

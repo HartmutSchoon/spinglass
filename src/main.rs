@@ -7,8 +7,8 @@ use core::num;
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
-    //run_without_ui();
-    run_with_ui();
+    run_without_ui();
+    //run_with_ui();
 }
 
 fn run_with_ui(){
