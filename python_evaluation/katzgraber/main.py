@@ -6,20 +6,25 @@ import re
 import matplotlib.pyplot as plt
 
 def main():
-    results_path = Path('results')
-    file_regex = re.compile('grid.*tsv')
-    file_paths = [file for file in results_path.iterdir() if file_regex.match(file.name)]
-    data = [pd.read_csv(file,sep='\t') for file in file_paths]
-    #in the first grid the first datapoint is at run=0 where all others start at run=1000
-    #-> we need to delete the first row to produce matching DataFrames
-    data[0] = data[0].drop(index=0, axis=1).reset_index(drop=True)
-    data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
-    filtered_data = filter_by_T_and_average(data,target_T=0.5) 
-    filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['linked_overlapp']))
-    filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['katz_energy']))
-    #data = mov_average_for_list_of_df(data, 'linked Overlapp')
-    #data = mov_average_for_list_of_df(data, 'katz_energy')
-    #av_data = average_list_of_df(data)
+    #results_path = Path('results')
+    #file_regex = re.compile('grid.*tsv')
+    #file_paths = [file for file in results_path.iterdir() if file_regex.match(file.name)]
+    #print("Read results directory")
+    #data = [pd.read_csv(file,sep='\t') for file in file_paths]
+    ##in the first grid the first datapoint is at run=0 where all others start at run=1000
+    ##-> we need to delete the first row to produce matching DataFrames
+    #data[0] = data[0].drop(index=0, axis=1).reset_index(drop=True)
+    #data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
+    #
+    #filtered_data = filter_by_T_and_average(data,target_T=0.5) 
+    #filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['linked_overlapp']))
+    #filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['katz_energy']))
+    ##data = mov_average_for_list_of_df(data, 'linked Overlapp')
+    ##data = mov_average_for_list_of_df(data, 'katz_energy')
+    ##av_data = average_list_of_df(data)
+    #filtered_data.to_csv('./T05_filtered_data.csv')
+    
+    filtered_data = pd.read_csv('./T05_filtered_data.csv')    
 
     """ plt.plot(av_data["run"]/1000, av_data["av_linked Overlapp"] )
     plt.plot(av_data["run"]/1000, av_data["av_katz_energy"] )
@@ -41,9 +46,11 @@ def filter_by_T_and_average(input_data: list[pd.DataFrame], target_T: float) -> 
     and column names as the input DataFrames, where each row is the average
     of the input_data rows where the rows temperature is equal to target_T'''
     
+    print("Compute T filtered averaged Dataframe")
     resulting_df = pd.DataFrame(columns=input_data[0].columns)
     #Loop over every row
     for row_idx in range(len(input_data[0])):
+        print("Compute T filtered averaged Dataframe:"+str(row_idx+1)+"/"+str(len(input_data[0])))
         av_row = pd.DataFrame(0, index=[0], columns= input_data[0].columns)
         num_matching_rows = 0
         for df in input_data:
@@ -83,7 +90,9 @@ def mov_average_for_list_of_df(data: list[pd.DataFrame], column_name: str) -> li
 def katz_energy_for_list_of_df(data: list[pd.DataFrame], z:int, J_square: float, num_particles: int) -> list[pd.DataFrame]:
     '''Loops over a list of of DataFrames and computes the 'katz_energy_for_df' for the specified 
     column in 'column_name' for every DataFrame'''
+    print("Compute katz energy for all data")
     for (idx,df) in enumerate(data):
+        print("Compute katz energy for all data:" + str(idx+1) + "/" + str(len(data)))
         katz_series = katz_energy_for_df(df, z, J_square, num_particles)
         new_df = append_df(df,katz_series)
         data[idx] = new_df

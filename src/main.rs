@@ -28,7 +28,7 @@ fn run_without_ui(){
     use spinglass::Simulation;
     use std::time::{Duration, Instant};
 
-    let num_sweeps = 100_000;
+    let num_sweeps = 1_000_000;
     let mut sim = Simulation::new();
     sim.custom_run();
 
