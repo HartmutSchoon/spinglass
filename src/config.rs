@@ -46,7 +46,7 @@ impl Default for PTConfig{
         return PTConfig{
             num_grids_equal_T: 4,
             T_start: 0.5,
-            T_end: 0.8,
+            T_end: 2.0,
             linear_m: 0.035,
             linear_dT0: 0.03,
         }
