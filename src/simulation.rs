@@ -111,9 +111,9 @@ impl Simulation{
     fn init_dir(&self){
         use std::io::Write;
 
-        fs::remove_dir_all("./results/");
-        fs::create_dir("./results/");
-        fs::copy("./config.toml", "./results/config.toml");
+        fs::remove_dir_all(&self.default_grid_config.save_path);
+        fs::create_dir(&self.default_grid_config.save_path);
+        fs::copy("./config.toml", self.default_grid_config.save_path.clone() + "/config.toml"); 
         // let config_string = toml::to_string(&self.config).unwrap();
         // fs::File::create("./results/config.toml").unwrap().write_all(config_string.as_bytes());
     }

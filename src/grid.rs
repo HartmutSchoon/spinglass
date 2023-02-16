@@ -227,9 +227,10 @@ impl Grid {
         //grid.update_history(0.0);
         return Ok(grid);
     }
+
     #[cfg(not(target_arch = "wasm32"))]
     pub fn init_output_file(&mut self) -> &mut Self {
-        let path = format!("./results/grid_{}.tsv", self.id);
+        let path = format!("{}/grid_{}.tsv",self.config.save_path, self.id);
         fs::remove_file(path.clone());
         self.output_file = Some(
             fs::OpenOptions::new()
@@ -998,7 +999,10 @@ impl Grid {
 
         self.history.add(
             run, T, energy, magnetization, linked_overlapp, katz_energy, av_linked_overlapp, av_katz_energy);
-        self.write_to_output_file(run, T, energy, magnetization,linked_overlapp);
+        
+        if run%self.config.skip_save==0{
+            self.write_to_output_file(run, T, energy, magnetization,linked_overlapp);
+        }
     }
     pub fn history(&self) -> &History {
         return &self.history;

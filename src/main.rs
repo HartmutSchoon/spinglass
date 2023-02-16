@@ -9,24 +9,12 @@ use std::env;
 #[cfg(not(target_arch = "wasm32"))]
 fn main(){
     //Read user input
-    let input_args: Vec<String> = env::args().collect();
 
-    //See if there are input args other than path present
-    if input_args.len() > 1{
-        //If there is a input
-        match input_args[1].as_str(){
-            //and it matches run with ui, otherwise print wrong input
-            "no_ui" => run_without_ui(),
-            _ => println!("To run without UI use no_ui"),
-        };
+    match env::args().find(|elem|elem == "no_ui"){
+        Some(_) => run_without_ui(),
+        None => run_with_ui(),
     }
-    else{
-        run_with_ui();
-    }
-    
-    //If no input is given run without ui
-    //run_without_ui();
-    //run_with_ui();
+
 }
 
 fn run_with_ui(){
@@ -47,10 +35,17 @@ fn run_without_ui(){
     use std::time::{Duration, Instant};
 
 
-    let config = Config::load(); 
-    let mut sim = Simulation::new(config.clone());
+    let mut config = Config::load(); 
+    match env::args().find(|elem|elem.contains("path=")){
+        Some(p) =>{
+            let path = p.replace("path=", "");
+            config.grid_config.save_path = path;
+        },
+        None => (),
+    }
     let num_sweeps = config.simulation_config.num_sweeps;
-    println!("{:?}",config);
+
+    let mut sim = Simulation::new(config.clone());
     sim.custom_run();
 
     let start = Instant::now();

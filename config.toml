@@ -18,6 +18,10 @@ coupling_variance = 1.0
 #Number of Datapoints to store in the grid history
 history_capacity = 100
 
+save_path = "./results"
+skip_save = 10_000
+ 
+
 [simulation_config]
 num_grids = 0
 #amount of simulation steps every grid performs before joining with other threads

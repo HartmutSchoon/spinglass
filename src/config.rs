@@ -51,7 +51,13 @@ pub struct GridConfig{
     pub T:f64,
     pub spin_up_init: bool,
     pub external_field:f64,
-    pub history_capacity:usize,
+    pub history_capacity:usize,  
+    
+    //path to results folder where grid data is stored
+    pub save_path: String,
+    //Amount of skipped datapoints while saving. E.x. skip_save=100
+    //results in only saving every 100 Datapoints
+    pub skip_save: u32,
 }
 
 impl Default for GridConfig{
@@ -66,6 +72,8 @@ impl Default for GridConfig{
             coupling_mean: 1.0,
             coupling_variance: 0.0,
             history_capacity:10_000,
+            save_path: String::from("./results"),
+            skip_save: 1_000_000,
         }
     }
 }
@@ -76,6 +84,7 @@ pub struct SimulationConfig{
     pub steps_per_sweep:u32,
     pub num_sweeps:u32, 
     pub histo_width: f64,
+
 }
 
 impl Default for SimulationConfig{
@@ -85,6 +94,7 @@ impl Default for SimulationConfig{
             steps_per_sweep:1000,
             num_sweeps:10,
             histo_width: 0.1,
+            
         }
     }
 }
