@@ -78,8 +78,8 @@ pub struct Simulation{
 }
 
 impl Simulation{
-    pub fn new()->Self{
-        let global_config = config::load();
+    pub fn new(global_config: config::Config)->Self{
+
         let config = global_config.simulation_config.clone();
         let default_grid_config = global_config.grid_config.clone();
         let grids = Vec::new();
@@ -109,8 +109,13 @@ impl Simulation{
 
     #[cfg(not(target_arch = "wasm32"))]
     fn init_dir(&self){
+        use std::io::Write;
+
         fs::remove_dir_all("./results/");
         fs::create_dir("./results/");
+        fs::copy("./config.toml", "./results/config.toml");
+        // let config_string = toml::to_string(&self.config).unwrap();
+        // fs::File::create("./results/config.toml").unwrap().write_all(config_string.as_bytes());
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -451,11 +456,11 @@ impl Simulation{
             //clone channel sender
             let thread_tx = tx.clone();
             //amount of metropolis steps to perform before thread closes
-            let thread_steps = self.config.thread_steps.clone();
+            let steps_per_sweep = self.config.steps_per_sweep.clone();
 
             thread::spawn(move ||{
                 //run N metropolis steps in thread
-                for _ in 0..thread_steps{
+                for _ in 0..steps_per_sweep{
                     thread_grid.metropolis_step();
                 }
                 //calculate and save temperature and energy of grid
@@ -478,7 +483,7 @@ impl Simulation{
 
     pub fn not_threaded_step(&mut self){
         for grid in self.grids.iter_mut(){
-            for _ in 0..self.config.thread_steps{
+            for _ in 0..self.config.steps_per_sweep{
                 grid.metropolis_step();
             }
         }

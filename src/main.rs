@@ -3,11 +3,29 @@
 // hide console window on Windows in release
 
 use core::num;
+use std::env;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
-fn main() {
-    run_without_ui();
+fn main(){
+    //Read user input
+    let input_args: Vec<String> = env::args().collect();
+
+    //See if there are input args other than path present
+    if input_args.len() > 1{
+        //If there is a input
+        match input_args[1].as_str(){
+            //and it matches run with ui, otherwise print wrong input
+            "no_ui" => run_without_ui(),
+            _ => println!("To run without UI use no_ui"),
+        };
+    }
+    else{
+        run_with_ui();
+    }
+    
+    //If no input is given run without ui
+    //run_without_ui();
     //run_with_ui();
 }
 
@@ -25,11 +43,14 @@ fn run_with_ui(){
 }
 
 fn run_without_ui(){
-    use spinglass::Simulation;
+    use spinglass::{Simulation,Config};    
     use std::time::{Duration, Instant};
 
-    let num_sweeps = 100_000;
-    let mut sim = Simulation::new();
+
+    let config = Config::load(); 
+    let mut sim = Simulation::new(config.clone());
+    let num_sweeps = config.simulation_config.num_sweeps;
+    println!("{:?}",config);
     sim.custom_run();
 
     let start = Instant::now();
@@ -67,9 +88,3 @@ fn main() {
     });
 }
 
-/*TODO: 
-    -Die couplings müssen nach Gauß initiert werden
-    -Multithreading in WASM
-    -Ab und zu stürzt der ab bei PT wenn man ein grid schließt
-
-*/

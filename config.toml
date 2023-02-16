@@ -1,37 +1,34 @@
 [grid_config]
-grid_dimensions = [100,100]
+grid_dimensions = [10,10,10]
 particle_position_method = "FillGrid"
 #particle_position_method = "RandomParticlePositions"
 #Amount particles. If particle_position_method is set to "FillGrid" value will be ignored.
 num_particles = 1000
-T = 0
+T = 0.5
 external_field = 0
-#number of points stored in History of the Grid
-history_capacity = 100000
 
 #true: Initialize all spins with Spin up.
 #false: Initialize all spins with random orientation.
 spin_up_init = false
 
-#set limit to the couplings between particles
-#[lower limit, upper limit] as f64
-#it is allowed to set lower limit = upper limit 
-coupling_limits = [1.0, 1.0]
+#Couplings are randomly selected by a gaussian distribution
+coupling_mean = 0.0
+coupling_variance = 1.0
+
+#Number of Datapoints to store in the grid history
+history_capacity = 100
 
 [simulation_config]
 num_grids = 0
 #amount of simulation steps every grid performs before joining with other threads
-thread_steps = 100000
-
-#amount of "thread_steps" the simulation makes. Will not be used if simulation is started as app. 
-num_steps = 100000
+steps_per_sweep = 1_000
+#amount of Sweeps the simulation makes. Will not be used if simulation is started as app. 
+num_sweeps = 100
+histo_width = 0.1
 
 [pt_config]
-num_T_steps= 3
-num_grids_equal_T= 2
-T_start= 0.0
-T_end= 3.0
-
-
-[app_config]
-
+num_grids_equal_T = 4
+T_start = 0.5
+T_end = 2.0
+linear_m = 0.035
+linear_dT0 = 0.03

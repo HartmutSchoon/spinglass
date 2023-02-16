@@ -45,8 +45,8 @@ pub struct App {
 impl App{
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //load config and split into smaller parts
-        let config = config::load(); 
-        let mut sim = Simulation::new();
+        let config = config::Config::default(); 
+        let mut sim = Simulation::new(config.clone());
         let app_state = AppState::default();
 
         return App {
@@ -176,12 +176,12 @@ impl eframe::App for App{
             .show(ui,|ui|{
                 ui.label("Simulation Parameters");
                 ui.label("#Steps Grids run in Multithreading: ");
-                let mut thread_steps = self.sim.config.thread_steps;
-                let mut slider_steps = thread_steps as f64 / 1000.0;
+                let mut steps_per_sweep = self.sim.config.steps_per_sweep;
+                let mut slider_steps = steps_per_sweep as f64 / 1000.0;
                 ui.add(DragValue::new(&mut slider_steps).speed(100)
                     .prefix("#Threaded Steps: ").suffix("K"));
-                thread_steps = (slider_steps * 1000.0) as u32;
-                self.sim.config.thread_steps = thread_steps;
+                steps_per_sweep = (slider_steps * 1000.0) as u32;
+                self.sim.config.steps_per_sweep = steps_per_sweep;
                 if ui.add(egui::Button::new("Run Simulation")).clicked(){
                     self.sim.running=true;
                 };
