@@ -1,3 +1,4 @@
 /target
 /dist
 **/results/*
+/slurm_out
