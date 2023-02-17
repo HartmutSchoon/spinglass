@@ -3,7 +3,7 @@
 // hide console window on Windows in release
 
 use core::num;
-use std::env;
+use std::{env,fs};
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -39,10 +39,12 @@ fn run_without_ui(){
     match env::args().find(|elem|elem.contains("path=")){
         Some(p) =>{
             let path = p.replace("path=", "");
-            config.grid_config.save_path = path;
+            config.grid_config.save_path = path.clone();
+            fs::remove_dir_all(path.clone());
+            fs::create_dir(path.clone());
         },
         None => (),
-    }
+    };
     let num_sweeps = config.simulation_config.num_sweeps;
 
     let mut sim = Simulation::new(config.clone());
