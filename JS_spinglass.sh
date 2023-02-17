@@ -13,5 +13,5 @@
 ######## Slurm options ########
 
 
-RESULTS_PATH=$WORK/spinglass/test_results/
-./target/release/spinglass no_ui "$RESULTS_PATH"
+RESULTS_PATH="$HOME/spinglass/test_results/"
+./target/release/spinglass no_ui "path=$RESULTS_PATH"

@@ -109,11 +109,10 @@ impl Simulation{
 
     #[cfg(not(target_arch = "wasm32"))]
     fn init_dir(&self){
-        use std::io::Write;
-
-        fs::remove_dir_all(&self.default_grid_config.save_path);
-        fs::create_dir(&self.default_grid_config.save_path);
-        fs::copy("./config.toml", self.default_grid_config.save_path.clone() + "/config.toml"); 
+        fs::create_dir_all(&self.default_grid_config.save_path)
+            .expect(&format!("Can't create save path: {}", self.default_grid_config.save_path));
+        fs::copy("./config.toml", self.default_grid_config.save_path.clone() + "/config.toml") 
+            .expect(&format!("Can't copy config.toml to save path: {}", self.default_grid_config.save_path));
         // let config_string = toml::to_string(&self.config).unwrap();
         // fs::File::create("./results/config.toml").unwrap().write_all(config_string.as_bytes());
     }
