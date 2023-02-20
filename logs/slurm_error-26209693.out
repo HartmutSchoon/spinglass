@@ -1,0 +1,10 @@
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+srun: error: Unable to create job step: Job/step already completing or completed
+slurmstepd: error: *** JOB 26209693 ON mpcs002 CANCELLED AT 2023-02-20T15:54:24 ***

@@ -2,7 +2,11 @@ use crate::{config::*, particles::*};
 use log::{error, warn};
 use rand::{self, Rng};
 use rand_distr::Distribution;
+
 use std::fs;
+use std::thread;
+use std::time;
+use std::path;
 
 #[derive(Clone)]
 pub struct History {
@@ -230,8 +234,21 @@ impl Grid {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn init_output_file(&mut self) -> &mut Self {
-        let path = format!("{}/grid_{}.tsv",self.config.save_path, self.id);
-        fs::remove_file(path.clone());
+        let path = format!("{}/grid_{}.tsv",self.config.save_path, self.id);  
+
+        fs::remove_file(&path);
+/*         let mut loop_counter = 0;
+        loop{
+            match path::Path::new(&path).exists(){
+                false => break,
+                true=>{
+                    if loop_counter >= 10 {panic!("Cant' create file handle for grid! Path: {}", &path)};
+                    loop_counter += 1;
+                    thread::sleep(time::Duration::from_secs(1));
+                }
+            };
+        }; */
+        
         self.output_file = Some(
             fs::OpenOptions::new()
                 .create_new(true)

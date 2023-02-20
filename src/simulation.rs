@@ -3,6 +3,8 @@ use std::fs;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle, current};
+use std::path;
+use std::time;
 
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -111,6 +113,22 @@ impl Simulation{
     fn init_dir(&self){
         fs::create_dir_all(&self.default_grid_config.save_path)
             .expect(&format!("Can't create save path: {}", self.default_grid_config.save_path));
+
+
+        //Look every second for 10 seconds if directory exists. If not panic!
+/*         let mut loop_counter = 0;
+        loop{
+            match path::Path::new(&self.default_grid_config.save_path).exists(){
+                true => break,
+                false =>{
+                    if loop_counter >= 10 {panic!("Can't create directory {}",self.default_grid_config.save_path)};
+                    loop_counter += 1;
+                    thread::sleep(time::Duration::from_secs(1));
+                }
+
+            }
+        } */
+
         fs::copy("./config.toml", self.default_grid_config.save_path.clone() + "/config.toml") 
             .expect(&format!("Can't copy config.toml to save path: {}", self.default_grid_config.save_path));
         // let config_string = toml::to_string(&self.config).unwrap();

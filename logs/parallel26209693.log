@@ -1,0 +1,10 @@
+Seq	Host	Starttime	JobRuntime	Send	Receive	Exitval	Signal	Command
+2	:	1676904807.462	    57.024	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_2
+3	:	1676904808.462	    56.025	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_3
+4	:	1676904809.462	    55.025	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_4
+5	:	1676904810.462	    54.025	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_5
+6	:	1676904811.462	    53.025	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_6
+7	:	1676904812.463	    52.024	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_7
+8	:	1676904813.464	    51.023	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_8
+9	:	1676904814.465	    50.023	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_9
+10	:	1676904815.465	    49.023	0	0	1	0	srun ./target/release/spinglass no_ui path=/gss/work/xese4803/spinglass/results_10
