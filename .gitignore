@@ -1,4 +1,6 @@
 /target
 /dist
 **/results/*
-/slurm_out
+/logs
+**/venv
+
