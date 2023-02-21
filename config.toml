@@ -18,8 +18,10 @@ coupling_variance = 1.0
 #Number of Datapoints to store in the grid history
 history_capacity = 100
 
+#default path for saving results. Can be overwritten by "path=" commandline argument 
 save_path = "./results"
-skip_save = 10_000
+#skips N runs of saving. If N=100 every 100th run is saved.
+skip_save = 100_000
  
 
 [simulation_config]
@@ -27,7 +29,7 @@ num_grids = 0
 #amount of simulation steps every grid performs before joining with other threads
 steps_per_sweep = 1_000
 #amount of Sweeps the simulation makes. Will not be used if simulation is started as app. 
-num_sweeps = 100
+num_sweeps = 1_000_000
 histo_width = 0.1
 
 [pt_config]

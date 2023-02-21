@@ -52,10 +52,10 @@ fn run_without_ui(){
     for run in 0..num_sweeps{
         sim.simulation_step();
         duration = start.elapsed();
-        println!("Completed run {}/{}, ETC: {:.2}s",
-            run+1,
-            num_sweeps,
-            (num_sweeps-run) as f64 * duration.as_secs_f64()/run as f64 );
+        //println!("Completed run {}/{}, ETC: {:.2}s",
+        //    run+1,
+        //    num_sweeps,
+        //    (num_sweeps-run) as f64 * duration.as_secs_f64()/run as f64 );
     }
 }
 

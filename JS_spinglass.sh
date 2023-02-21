@@ -3,16 +3,16 @@
 ######## Slurm options ########
 
 #### general settings
-#SBATCH --job-name=spinglass_test
+#SBATCH --job-name=spinglass
 #SBATCH --output=./logs/slurm-%j.out
 #SBATCH --error=./logs/slurm_error-%j.out
-#_BATCH --mail-type=ALL #other good setting: END,FAIL
+#SBATCH --mail-type=ALL #other good setting: END,FAIL
 #SBATCH --mail-user=hartmut.schoon@uni-oldenburg.de
 
 
 #### request resources
 #SBATCH --partition=carl.p
-#SBATCH --time=0:05:00	#max runtime
+#_BATCH --time=0:05:00	#max runtime
 #_BATCH --nodes 2
 #_BATCH --cpus-per-task=1
 #_BATCH --mem=1G
@@ -25,10 +25,14 @@
 ######## Slurm options ########
 
 ## Path and args
-results_path="$WORK/spinglass"
-command_args=("no_ui" "path=$results_path/results_{}")
-parallel_args=("-N1" "-j$SLURM_NTASKS" "--joblog" "./logs/parallel$SLURM_JOB_ID.log" "--delay" "1")
+#command_args=("no_ui" "path=$results_path/results_{}")
 
-export RUST_BACKTRACE=1
+#Set srun command. Every srun only needs one node but there are 10 srun commands running in parallel
+srun="srun -n1"
+#Set parallel command. One input argument, delay of 0.2 between single execution, j jobs run in paralel and 
+#log is saved to logs folder
+parallel="parallel -N 1 --delay 0.2 -j $SLURM_NTASKS --joblog ./logs/parallel_$SLURM_JOB_ID.log"
 
-parallel "${parallel_args[@]}" srun ./target/release/spinglass "${command_args[@]}" ::: {1..10}
+export RUST_BACKTRACE=full
+
+$parallel "$srun ./spinglass.sh {}" ::: {0..9}
