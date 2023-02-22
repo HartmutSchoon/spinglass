@@ -1,19 +1,18 @@
-
 import numpy as np
 import pandas as pd
 from pathlib import Path
 import re
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 def main():
-    all_results_path = '/users/student/xese4803/Data/spinglass/testData'
+    #all_results_path = '/users/student/xese4803/Data/spinglass/testData'
+    all_results_path = '/home/hatti/Data/spinglass'
     all_results_path = Path(all_results_path)
     filtered_data = []
     for results_path in all_results_path.iterdir():
-        #file_regex = re.compile('grid.*tsv')
         calc_one_dir(results_path)
         filtered_data.append(pd.read_csv(results_path / 'T05_filtered_data.csv'))
-    print("BP")
+    #print("BP")
       
     """filtered_data = pd.read_csv('./T05_filtered_data.csv')    """
 
@@ -23,21 +22,22 @@ def main():
     plt.grid()
     plt.show() """
     
-    """plt.plot(filtered_data["run"]/1000, filtered_data["av_linked_overlapp"] )
-    plt.plot(filtered_data["run"]/1000, filtered_data["av_katz_energy"] )
+    plt.plot(filtered_data[0]["run"]/1000, filtered_data[0]["av_linked_overlapp"] )
+    plt.plot(filtered_data[0]["run"]/1000, filtered_data[0]["av_katz_energy"] )
     plt.xlabel("Sweep")
     plt.xscale('log')
     plt.grid()
-    plt.show()"""
+    plt.show()
 
     #print("hello World")
     
 
 def calc_one_dir(results_path):
+     
+        file_regex = re.compile('grid.*tsv')
+        file_paths =[file for file in results_path.iterdir() if file_regex.match(file.name)]
         
-        file_paths =[file for file in results_path.iterdir() if file.name!="config.toml"]
-        
-        print("Read results directory"+results_path.name)
+        print("Read results directory "+results_path.name)
         data = [pd.read_csv(file,sep='\t') for file in file_paths]
         
         data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
