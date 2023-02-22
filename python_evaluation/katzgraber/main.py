@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 import re
 import matplotlib
-#matplotlib.use('GTK4Agg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 
@@ -16,21 +16,38 @@ def main():
         #calc_one_dir(results_path)
         filtered_data.append(pd.read_csv(results_path / 'T05_filtered_data.csv'))
     #print("BP")
-      
-    """filtered_data = pd.read_csv('./T05_filtered_data.csv')    """
-
-    """ plt.plot(av_data["run"]/1000, av_data["av_linked Overlapp"] )
-    plt.plot(av_data["run"]/1000, av_data["av_katz_energy"] )
-    plt.xlabel("Sweep")
-    plt.grid()
-    plt.show() """
+    
+    linked_overlapp = np.zeros((len(filtered_data[0]),len(filtered_data)))
+    katz_energy = np.zeros((len(filtered_data[0]),len(filtered_data)))
+    sweep = filtered_data[0]["run"].to_numpy()/1000;
+    for idx, df in enumerate(filtered_data):
+        linked_overlapp[:,idx]=filtered_data[idx]["av_linked_overlapp"]
+        katz_energy[:,idx]=filtered_data[idx]["av_katz_energy"]
+        
+    print("BP")
+    mean_katz = np.mean(katz_energy, axis=1)
+    mean_overlapp = np.mean(linked_overlapp, axis=1)
+    
+    
+    std_err_katz = np.std(katz_energy, axis=1) / np.sqrt(np.shape(katz_energy)[1])
+    std_err_overlapp = np.std(linked_overlapp, axis=1) / np.sqrt(np.shape(linked_overlapp)[1])
     
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
-    ax.plot(filtered_data[1]["run"]/1000, filtered_data[1]["katz_energy"],
+    #marker, caps, bars=ax.errorbar(sweep,mean_katz, yerr= std_err_katz,
+    #         linestyle='solid', color='black', label = r'$1-2T|U|/z$' )
+    #[bar.set_alpha(0.5) for bar in bars]
+    #[cap.set_alpha(0.5) for cap in caps]
+    #marker, caps, bars=ax.errorbar(sweep,mean_overlapp, yerr= std_err_overlapp,
+    #         linestyle='dashdot', color='black', label = r'$\langle q_l \rangle$')
+    #[bar.set_alpha(0.5) for bar in bars]
+    #[cap.set_alpha(0.5) for cap in caps]
+    ax.plot(sweep,mean_katz,
              linestyle='solid', color='black', label = r'$1-2T|U|/z$' )
-    ax.plot(filtered_data[1]["run"]/1000, filtered_data[1]["av_linked_overlapp"],
+    ax.fill_between(sweep, mean_katz+std_err_katz,mean_katz-std_err_katz, color='gray')
+    ax.plot(sweep,mean_overlapp, 
              linestyle='dashdot', color='black', label = r'$\langle q_l \rangle$')
+    ax.fill_between(sweep, mean_overlapp+std_err_overlapp,mean_overlapp-std_err_overlapp, color='gray')
     ax.set_xlabel("Sweep")
     ax.legend(loc='lower right')
     ax.set_xscale('log')
