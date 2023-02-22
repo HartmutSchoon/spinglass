@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import re
+import matplotlib
+#matplotlib.use('GTK4Agg')
 import matplotlib.pyplot as plt
+
 
 def main():
     #all_results_path = '/users/student/xese4803/Data/spinglass/testData'
@@ -10,7 +13,7 @@ def main():
     all_results_path = Path(all_results_path)
     filtered_data = []
     for results_path in all_results_path.iterdir():
-        calc_one_dir(results_path)
+        #calc_one_dir(results_path)
         filtered_data.append(pd.read_csv(results_path / 'T05_filtered_data.csv'))
     #print("BP")
       
@@ -22,12 +25,18 @@ def main():
     plt.grid()
     plt.show() """
     
-    plt.plot(filtered_data[0]["run"]/1000, filtered_data[0]["av_linked_overlapp"] )
-    plt.plot(filtered_data[0]["run"]/1000, filtered_data[0]["av_katz_energy"] )
-    plt.xlabel("Sweep")
-    plt.xscale('log')
-    plt.grid()
-    plt.show()
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.plot(filtered_data[1]["run"]/1000, filtered_data[1]["katz_energy"],
+             linestyle='solid', color='black', label = r'$1-2T|U|/z$' )
+    ax.plot(filtered_data[1]["run"]/1000, filtered_data[1]["av_linked_overlapp"],
+             linestyle='dashdot', color='black', label = r'$\langle q_l \rangle$')
+    ax.set_xlabel("Sweep")
+    ax.legend(loc='lower right')
+    ax.set_xscale('log')
+    ax.grid()
+    fig.savefig('T05_10E6Sweeps.png')
+    plt.show() 
 
     #print("hello World")
     
