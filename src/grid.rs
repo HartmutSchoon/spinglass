@@ -628,7 +628,7 @@ impl Grid {
                     0.5 * neighbour_link.coupling() * f64::from(spin) * f64::from(neighbour_spin);
             }
             //Add external field to energy
-            energy -= 0.5 * self.external_field * f64::from(spin);
+            energy -= self.external_field * f64::from(spin);
         }
         return energy;
     }
