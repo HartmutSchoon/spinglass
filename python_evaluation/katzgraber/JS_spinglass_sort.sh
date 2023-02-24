@@ -19,7 +19,7 @@
 #_BATCH --mem-per-cpu=1G
 
 #### parallel 
-#SBATCH --ntasks=100
+#SBATCH --ntasks=22
 #_BATCH --array1-10:1%4
 
 ######## Slurm options ########
