@@ -14,8 +14,6 @@ all_results_path = Path(all_results_path)
 regex = re.compile('results.*')
 simulation_paths =[path for path in all_results_path.iterdir() if regex.match(path.name)]
 
-
-
 T_sorted_path = all_results_path / 'T_sorted';
 
 os.mkdir(T_sorted_path)
