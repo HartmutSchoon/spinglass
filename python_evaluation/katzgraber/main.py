@@ -13,7 +13,7 @@ def main():
     all_results_path = Path(all_results_path)
     filtered_data = []
     for results_path in all_results_path.iterdir():
-        #calc_one_dir(results_path)
+        calc_one_dir(results_path)
         filtered_data.append(pd.read_csv(results_path / 'T05_filtered_data.csv'))
     #print("BP")
     
@@ -66,7 +66,8 @@ def calc_one_dir(results_path):
         print("Read results directory "+results_path.name)
         data = [pd.read_csv(file,sep='\t') for file in file_paths]
         
-        data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
+        print("BP")
+        #data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
         
         filtered_data = filter_by_T_and_average(data,target_T=0.5) 
         filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['linked_overlapp']))
