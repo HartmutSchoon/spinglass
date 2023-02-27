@@ -12,7 +12,7 @@
 
 #### request resources
 #SBATCH --partition=carl.p
-#_BATCH --time=0:05:00	#max runtime
+#SBATCH --time=3-00:00	#max runtime
 #_BATCH --nodes 2
 #_BATCH --cpus-per-task=1
 #_BATCH --mem=1G
@@ -32,4 +32,4 @@ srun="srun -n1"
 parallel="parallel -N 1 --delay 0.2 -j $SLURM_NTASKS --joblog ./logs/parallel_$SLURM_JOB_ID.log -a T_list.txt"
 
 
-$parallel "$srun ./main_new.py {}" 
+$parallel "$srun python sort_data_by_T.py {}" 

@@ -1,6 +1,6 @@
 /target
 /dist
 **/results/*
-/logs
+**/logs
 **/venv
 

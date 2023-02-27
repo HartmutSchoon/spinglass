@@ -1,5 +1,5 @@
 [grid_config]
-grid_dimensions = [10,10,10]
+grid_dimensions = [8,8,8]
 particle_position_method = "FillGrid"
 #particle_position_method = "RandomParticlePositions"
 #Amount particles. If particle_position_method is set to "FillGrid" value will be ignored.

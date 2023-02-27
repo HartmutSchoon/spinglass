@@ -8,15 +8,15 @@ import os
 
 num_equalT_grids = 4
 
-#all_results_path = '/users/student/xese4803/Data/spinglass/testData'
-all_results_path = '/home/hatti/Data/spinglass'
+all_results_path = '/gss/work/xese4803/spinglass'
+#all_results_path = '/home/hatti/Data/spinglass'
 all_results_path = Path(all_results_path)
 regex = re.compile('results.*')
 simulation_paths =[path for path in all_results_path.iterdir() if regex.match(path.name)]
 
 T_sorted_path = all_results_path / 'T_sorted';
 
-os.mkdir(T_sorted_path)
+#os.mkdir(T_sorted_path)
 T = float(sys.argv[1])
 #T_list = calc_T_list()
 
@@ -47,8 +47,8 @@ for sim_idx,path in enumerate(simulation_paths):
                 matching_T_data[found_at_T][line_idx,1] = row['energy']
                 matching_T_data[found_at_T][line_idx,2] = row['linked_overlapp']
                 found_at_T+=1
-        if found_at_T != 4:
-            raise ValueError('something went wrong with indexing the np tables')
+        #if found_at_T != 4:
+            #raise ValueError('something went wrong with indexing the np tables')
         found_at_T = 0
     
     for idx,data in enumerate(matching_T_data):
@@ -56,7 +56,7 @@ for sim_idx,path in enumerate(simulation_paths):
         save_name = "data"+"_Sim"+str(sim_idx)+"_Grid"+str(idx)
         df.to_csv(this_T_path / save_name)
         
-    print("BP")
+    #print("BP")
         
         
 

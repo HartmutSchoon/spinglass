@@ -3,7 +3,7 @@
 ######## Slurm options ########
 
 #### general settings
-#SBATCH --job-name=spinglass
+#SBATCH --job-name=spinglass_L4
 #SBATCH --output=./logs/slurm-%j.out
 #SBATCH --error=./logs/slurm_error-%j.out
 #SBATCH --mail-type=ALL #other good setting: END,FAIL
@@ -12,7 +12,7 @@
 
 #### request resources
 #SBATCH --partition=carl.p
-#_BATCH --time=0:05:00	#max runtime
+#SBATCH --time=3-00:00	#max runtime
 #_BATCH --nodes 2
 #_BATCH --cpus-per-task=1
 #_BATCH --mem=1G
@@ -35,4 +35,4 @@ parallel="parallel -N 1 --delay 0.2 -j $SLURM_NTASKS --joblog ./logs/parallel_$S
 
 export RUST_BACKTRACE=full
 
-$parallel "$srun ./spinglass.sh {}" ::: {0..9}
+$parallel "$srun ./spinglass.sh {}" ::: {0..10}
