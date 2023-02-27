@@ -178,7 +178,7 @@ impl Simulation{
                     //Then it also wouldn't be possible to compute the linked overlapp
                     // then the size of other_ids would be 0
                     if len == other_ids.len() || other_ids.len() == 0{
-                        self.grid_mut(*grid_id).unwrap().update_history(f64::NAN)
+                        self.grid_mut(*grid_id).unwrap().update_history(f64::NAN, f64::NAN)
                     }
                     
                     //sample some other id at the same temperature
@@ -195,14 +195,19 @@ impl Simulation{
                     //Helmut G. Katzgraber, Matteo Palassini, and A. P. Young
                     let z_half = self.grid(*grid_id).unwrap().dimensions().len() as f64;
                     let normed_linked_overlapp = linked_overlapp/(z_half*capacity as f64);
+
+                    let overlap = self.grid(*grid_id).unwrap().calc_overlap(
+                        self.grid(*other_id).unwrap()).unwrap();
+                    let normed_overlap = overlap/capacity as f64;
+
                     //let grid pdate history with this overlapp
-                    self.grid_mut(*grid_id).unwrap().update_history(normed_linked_overlapp);
+                    self.grid_mut(*grid_id).unwrap().update_history(normed_overlap,normed_linked_overlapp);
 
                 },
                 None => {
                     //we did not find a equalTGridIDs with matching T -> grid isnt in Pt enviroment
                     //->no overlapp can be calculated
-                    self.grid_mut(*grid_id).unwrap().update_history(f64::NAN);
+                    self.grid_mut(*grid_id).unwrap().update_history(f64::NAN,f64::NAN);
                 },
             }
         }

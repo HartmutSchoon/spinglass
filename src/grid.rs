@@ -256,7 +256,7 @@ impl Grid {
                 .open(path)
                 .expect("Unable to open file"),
         );
-        let header = String::from("run\tT\tenergy\tmagnetization\tlinked_overlapp\n");
+        let header = String::from("run\tT\tenergy\tmagnetization\toverlap\tlinked_overlapp\n");
 
         self.output_file
             .as_mut()
@@ -276,10 +276,11 @@ impl Grid {
         T: f64,
         energy: f64,
         magnetization: i32,
+        overlap: f64,
         linked_overlapp:f64) {
         if let Some(file) = self.output_file.as_mut() {
-            let output = String::from(format!("{}\t{}\t{}\t{}\t{}\n",
-                 run, T, energy, magnetization,linked_overlapp));
+            let output = String::from(format!("{}\t{}\t{}\t{}\t{}\t{}\n",
+                 run, T, energy, magnetization,overlap,linked_overlapp));
             file.write_all(output.as_bytes());
         }
     }
@@ -1003,7 +1004,7 @@ impl Grid {
     pub fn set_id(&mut self, id: u32) {
         self.id = id
     }
-    pub fn update_history(&mut self, linked_overlapp:f64) {
+    pub fn update_history(&mut self, overlap:f64, linked_overlapp:f64) {
         let run = self.run;
         let T = self.T;
         let energy = self.calc_energy();
@@ -1018,7 +1019,7 @@ impl Grid {
             run, T, energy, magnetization, linked_overlapp, katz_energy, av_linked_overlapp, av_katz_energy);
         
         if run%self.config.skip_save==0{
-            self.write_to_output_file(run, T, energy, magnetization,linked_overlapp);
+            self.write_to_output_file(run, T, energy, magnetization,overlap,linked_overlapp);
         }
     }
     pub fn history(&self) -> &History {
