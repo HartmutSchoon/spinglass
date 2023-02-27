@@ -33,7 +33,7 @@ for sim_idx,path in enumerate(simulation_paths):
     
     matching_T_data = []
     for i in range(num_equalT_grids):
-        matching_T_data.append(np.zeros((num_lines,3)))
+        matching_T_data.append(np.zeros((num_lines,4)))
     
     for line_idx in range(num_lines):
         print("Processing T: " + str(T)
@@ -45,14 +45,15 @@ for sim_idx,path in enumerate(simulation_paths):
             if row['T'] == T:
                 matching_T_data[found_at_T][line_idx,0] = row['run']
                 matching_T_data[found_at_T][line_idx,1] = row['energy']
-                matching_T_data[found_at_T][line_idx,2] = row['linked_overlapp']
+                matching_T_data[found_at_T][line_idx,2] = row['overlap']
+                matching_T_data[found_at_T][line_idx,3] = row['linked_overlapp']
                 found_at_T+=1
         #if found_at_T != 4:
             #raise ValueError('something went wrong with indexing the np tables')
         found_at_T = 0
     
     for idx,data in enumerate(matching_T_data):
-        df = pd.DataFrame(data=data, columns = ['run','energy','linked_overlap'])
+        df = pd.DataFrame(data=data, columns = ['run','energy','overlap''linked_overlap'])
         save_name = "data"+"_Sim"+str(sim_idx)+"_Grid"+str(idx)
         df.to_csv(this_T_path / save_name)
         

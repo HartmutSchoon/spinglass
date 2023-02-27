@@ -69,12 +69,12 @@ mean_overlap = np.mean(linked_overlap, axis=1)
 std_err_katz = np.std(katz_energy, axis=1) / np.sqrt(np.shape(katz_energy)[1])
 std_err_overlap = np.std(linked_overlap, axis=1) / np.sqrt(np.shape(linked_overlap)[1])
 
-np.savez('equilib_data.npz',sweep=sweep,
+np.savez('./data/equilib_data.npz',sweep=sweep,
             mean_katz=mean_katz,mean_overlap=mean_overlap,
             std_err_katz=std_err_katz, std_err_overlap=std_err_overlap)
 
 
-output =np.load('equilib_data.npz')
+output =np.load('./data/equilib_data.npz')
 sweep = output['sweep']
 mean_katz=output['mean_katz']
 mean_overlap=output['mean_overlap']
@@ -107,7 +107,7 @@ ax.set_xlabel("Sweep")
 ax.legend(loc='lower right')
 ax.set_xscale('log')
 ax.grid()
-fig.savefig('T'+str(T)+'_10E6Sweeps.png')
+fig.savefig('./data/T'+str(T)+'_10E6Sweeps.png')
 plt.show() 
 
 
