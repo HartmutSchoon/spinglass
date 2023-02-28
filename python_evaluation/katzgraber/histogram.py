@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 
 
 overlap_L4 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L4/T_sorted/all_overlaps.csv')
-overlap_L6 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L6/T_sorted/all_overlaps.csv')
+#WARNING: DEBUG PATH!
+overlap_L6 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L8/T_sorted/all_overlaps.csv')
 overlap_L8 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L8/T_sorted/all_overlaps.csv')
 
 #Make Histogram
@@ -87,14 +88,32 @@ fig.savefig('test_histo.png')
 f = open("T_list.txt", "r")
 T_vec = []
 for line in f:
-    T_vec.append(float(line))
+    T_vec.append(round(float(line),4))
 T_vec=np.array(T_vec)
+
+mean_q_L4 = np.zeros(shape=T_vec.shape)
+mean_q_L6 = np.zeros(shape=T_vec.shape)
+mean_q_L8 = np.zeros(shape=T_vec.shape)
+
+for idx,T in enumerate(T_vec):
+    mean_q_L4[idx]=overlap_L4['T'+str(T)].to_numpy().mean()
+    mean_q_L6[idx]=overlap_L6['T'+str(T)].to_numpy().mean()
+    mean_q_L8[idx]=overlap_L8['T'+str(T)].to_numpy().mean()
 
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
+ax.plot(T_vec, mean_q_L4 , 'kv')
+ax.plot(T_vec, mean_q_L4, 'k')
+ax.plot(T_vec, mean_q_L6 , 'ko')
+ax.plot(T_vec, mean_q_L6, 'k')
+ax.plot(T_vec, mean_q_L8 , 'ks')
+ax.plot(T_vec, mean_q_L8, 'k')
 
-
-
+ax.set_xlabel("T")
+ax.set_ylabel("|q|")
+ax.grid()
+fig.savefig('test_histo.png')
+plt.show()
 print("BP")
     

@@ -13,7 +13,7 @@ output_file = Path(path_to_data) / 'all_overlaps.csv'
 f = open("T_list.txt", "r")
 T_list = []
 for line in f:
-    T_list.append(float(line))
+    T_list.append(round(float(line),4))
 
 if DEBUG:
     T_list=T_list[0:3]
