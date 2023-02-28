@@ -29,13 +29,13 @@ for sim_idx,path in enumerate(simulation_paths):
     T_id = 1
     data_one_sim = [pd.read_csv(file,sep='\t') for file in sim_files]
     
-    num_lines = data_one_sim[0].shape[0]
+    num_rows = data_one_sim[0].shape[0]
     
     matching_T_data = []
     for i in range(num_equalT_grids):
-        matching_T_data.append(np.zeros((num_lines,4)))
+        matching_T_data.append(np.zeros((num_rows,4)))
     
-    for line_idx in range(num_lines):
+    for line_idx in range(num_rows):
         print("Processing T: " + str(T)
             +" Sim Nr: " + str(sim_idx)
             +" Line Nr: " + str(line_idx))
@@ -53,7 +53,7 @@ for sim_idx,path in enumerate(simulation_paths):
         found_at_T = 0
     
     for idx,data in enumerate(matching_T_data):
-        df = pd.DataFrame(data=data, columns = ['run','energy','overlap''linked_overlap'])
+        df = pd.DataFrame(data=data, columns = ['run','energy','overlap','linked_overlap'])
         save_name = "data"+"_Sim"+str(sim_idx)+"_Grid"+str(idx)
         df.to_csv(this_T_path / save_name)
         
