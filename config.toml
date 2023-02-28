@@ -1,9 +1,9 @@
 [grid_config]
-grid_dimensions = [4,4,4]
+grid_dimensions = [8,8,8]
 particle_position_method = "FillGrid"
 #particle_position_method = "RandomParticlePositions"
 #Amount particles. If particle_position_method is set to "FillGrid" value will be ignored.
-num_particles = 64
+num_particles = 512
 T = 0.5
 external_field = 0
 
@@ -21,15 +21,15 @@ history_capacity = 100
 #default path for saving results. Can be overwritten by "path=" commandline argument 
 save_path = "./results"
 #skips N runs of saving. If N=100 every 100th  Metropolis-Step is saved.
-skip_save = 6_400
+skip_save = 51_200
  
 
 [simulation_config]
 num_grids = 0
 #amount of simulation steps every grid performs before joining with other threads
-steps_per_sweep = 64
+steps_per_sweep = 512
 #amount of Sweeps the simulation makes. Will not be used if simulation is started as app. 
-num_sweeps = 10_000
+num_sweeps = 1_000_000
 histo_width = 0.1
 
 [pt_config]
