@@ -5,9 +5,9 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-DEBUG = True
+DEBUG = False
 overlap_column_name = 'overlap'
-path_to_data = '/home/hatti/Data/spinglass/spinglass_L4/T_sorted'
+path_to_data = '/home/hatti/Data/spinglass/spinglass_L8/T_sorted'
 output_file = Path(path_to_data) / 'all_overlaps.csv'
 
 f = open("T_list.txt", "r")
@@ -16,7 +16,7 @@ for line in f:
     T_list.append(float(line))
 
 if DEBUG:
-    T_list=T_list[0:2]
+    T_list=T_list[0:3]
     
 data_all_T = []    
 for T in T_list:
@@ -56,4 +56,5 @@ for (T,data) in data_all_T:
 
 
 overlap = pd.concat(pd_columns, axis=1, keys=[s.name for s in pd_columns])
-overlap.to_csv(output_filename, index=False)
+overlap.to_csv(output_file, index=False)
+print("BP")
