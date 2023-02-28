@@ -3,7 +3,7 @@
 ######## Slurm options ########
 
 #### general settings
-#SBATCH --job-name=spinglass_sort
+#SBATCH --job-name=SG_L8_sort
 #SBATCH --output=./logs/slurm-%j.out
 #SBATCH --error=./logs/slurm_error-%j.out
 #SBATCH --mail-type=ALL #other good setting: END,FAIL

@@ -6,7 +6,7 @@
 TASK_ID=$1
 
 #In this path the results are stored
-results_path="$WORK/spinglass_L8/results_$TASK_ID"
+results_path="$WORK/spinglass_L4/results_$TASK_ID"
 
 #Start spinglass simulation
 echo "Starting Spinglass with ID $TASK_ID on $(hostname)"

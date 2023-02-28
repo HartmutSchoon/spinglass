@@ -8,7 +8,7 @@ import os
 
 num_equalT_grids = 4
 
-all_results_path = '/gss/work/xese4803/spinglass_L4'
+all_results_path = '/gss/work/xese4803/spinglass_L8'
 #all_results_path = '/home/hatti/Data/spinglass'
 all_results_path = Path(all_results_path)
 regex = re.compile('results.*')
