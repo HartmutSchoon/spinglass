@@ -8,7 +8,7 @@ import os
 
 num_equalT_grids = 4
 
-all_results_path = '/gss/work/xese4803/spinglass'
+all_results_path = '/gss/work/xese4803/spinglass_L4'
 #all_results_path = '/home/hatti/Data/spinglass'
 all_results_path = Path(all_results_path)
 regex = re.compile('results.*')
@@ -33,7 +33,7 @@ for sim_idx,path in enumerate(simulation_paths):
     
     matching_T_data = []
     for i in range(num_equalT_grids):
-        matching_T_data.append(np.zeros((num_lines,3)))
+        matching_T_data.append(np.zeros((num_lines,4)))
     
     for line_idx in range(num_lines):
         print("Processing T: " + str(T)
