@@ -119,4 +119,41 @@ ax.grid()
 fig.savefig('qMean_over_T.png')
 plt.show()
 print("BP")
+
+
+f = open("T_list.txt", "r")
+T_vec = []
+for line in f:
+    T_vec.append(round(float(line),4))
+T_vec=np.array(T_vec)
+
+mean_q_L4 = np.zeros(shape=T_vec.shape)
+mean_q_L6 = np.zeros(shape=T_vec.shape)
+mean_q_L8 = np.zeros(shape=T_vec.shape)
+
+for idx,T in enumerate(T_vec):
+    ov_L4 = overlap_L4['T'+str(T)].to_numpy()
+    mean_q_L4[idx] = ov_L4[ov_L4 >= 0].mean()
+    ov_L6 = overlap_L6['T'+str(T)].to_numpy()
+    mean_q_L6[idx] = ov_L6[ov_L6 >= 0].mean()
+    ov_L8 = overlap_L8['T'+str(T)].to_numpy()
+    mean_q_L8[idx] = ov_L8[ov_L8 >= 0].mean()
+
+
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+ax.plot(T_vec, mean_q_L4 , 'kv', label = r'L=4')
+ax.plot(T_vec, mean_q_L4, 'k')
+ax.plot(T_vec, mean_q_L6 , 'ko', label = r'L=6')
+ax.plot(T_vec, mean_q_L6, 'k')
+ax.plot(T_vec, mean_q_L8 , 'ks', label = r'L=8')
+ax.plot(T_vec, mean_q_L8, 'k')
+
+ax.set_xlabel("$\it{T}$")
+ax.set_ylabel("$\it{|q_{>0}|}$")
+ax.legend(loc='upper right')
+ax.grid()
+fig.savefig('qGreater0Mean_over_T.png')
+plt.show()
+print("BP")
     
