@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 overlap_L4 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L4/T_sorted/all_overlaps.csv')
 #WARNING: DEBUG PATH!
-overlap_L6 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L8/T_sorted/all_overlaps.csv')
+overlap_L6 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L6/T_sorted/all_overlaps.csv')
 overlap_L8 = pd.read_csv('/home/hatti/Data/spinglass/spinglass_L8/T_sorted/all_overlaps.csv')
 
 #Make Histogram
@@ -36,19 +36,20 @@ bins = [e+delta_bin/2 for e in bin_edges[:-1]]
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
-ax.plot(bins, histo_L4_T05 , 'kv')
+ax.plot(bins, histo_L4_T05 , 'kv', label = r'L=4' )
 ax.plot(bins, histo_L4_T05, 'k')
-ax.plot(bins, histo_L6_T05 , 'ko')
+ax.plot(bins, histo_L6_T05 , 'ko', label = r'L=6')
 ax.plot(bins, histo_L6_T05, 'k')
-ax.plot(bins, histo_L8_T05 , 'ks')
+ax.plot(bins, histo_L8_T05 , 'ks', label = r'L=8')
 ax.plot(bins, histo_L8_T05, 'k')
 
 
-ax.set_xlabel("q")
-#ax.legend(loc='lower right')
+ax.set_xlabel("$\it{q}$")
+ax.set_ylabel("$\it{P(q)}$")
+ax.legend(loc='upper right')
 #ax.set_xscale('log')
 ax.grid()
-fig.savefig('test_histo.png')
+fig.savefig('histo_oneRun.png')
 #plt.show() 
 
 input_array = overlap_L4["T0.5"].to_numpy()
@@ -68,19 +69,20 @@ bins = [e+delta_bin/2 for e in bin_edges[:-1]]
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
-ax.plot(bins, histo_L4_T05 , 'kv')
+ax.plot(bins, histo_L4_T05 , 'kv', label = r'L=4')
 ax.plot(bins, histo_L4_T05, 'k')
-ax.plot(bins, histo_L6_T05 , 'ko')
+ax.plot(bins, histo_L6_T05 , 'ko', label = r'L=6')
 ax.plot(bins, histo_L6_T05, 'k')
-ax.plot(bins, histo_L8_T05 , 'ks')
+ax.plot(bins, histo_L8_T05 , 'ks', label = r'L=8')
 ax.plot(bins, histo_L8_T05, 'k')
 
 
-ax.set_xlabel("q")
-#ax.legend(loc='lower right')
+ax.set_xlabel("$\it{q}$")
+ax.set_ylabel("$\it{P(q)}$")
+ax.legend(loc='upper right')
 #ax.set_xscale('log')
 ax.grid()
-fig.savefig('test_histo.png')
+fig.savefig('histo_all.png')
 #plt.show() 
 
 
@@ -103,17 +105,18 @@ for idx,T in enumerate(T_vec):
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1)
-ax.plot(T_vec, mean_q_L4 , 'kv')
+ax.plot(T_vec, mean_q_L4 , 'kv', label = r'L=4')
 ax.plot(T_vec, mean_q_L4, 'k')
-ax.plot(T_vec, mean_q_L6 , 'ko')
+ax.plot(T_vec, mean_q_L6 , 'ko', label = r'L=6')
 ax.plot(T_vec, mean_q_L6, 'k')
-ax.plot(T_vec, mean_q_L8 , 'ks')
+ax.plot(T_vec, mean_q_L8 , 'ks', label = r'L=8')
 ax.plot(T_vec, mean_q_L8, 'k')
 
-ax.set_xlabel("T")
-ax.set_ylabel("|q|")
+ax.set_xlabel("$\it{T}$")
+ax.set_ylabel("$\it{|q|}$")
+ax.legend(loc='upper right')
 ax.grid()
-fig.savefig('test_histo.png')
+fig.savefig('qMean_over_T.png')
 plt.show()
 print("BP")
     

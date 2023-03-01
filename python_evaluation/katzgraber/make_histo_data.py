@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 DEBUG = False
 overlap_column_name = 'overlap'
-path_to_data = '/home/hatti/Data/spinglass/spinglass_L8/T_sorted'
+path_to_data = '/home/hatti/Data/spinglass/spinglass_L6/T_sorted'
 output_file = Path(path_to_data) / 'all_overlaps.csv'
 
 f = open("T_list.txt", "r")

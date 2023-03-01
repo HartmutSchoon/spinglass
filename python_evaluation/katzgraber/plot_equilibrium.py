@@ -23,11 +23,12 @@ T = 0.5
 num_particles = 10*10*10
 z = 6
 J_squared = 1
+results_path = Path('/home/hatti/Data/spinglass/T_sorted_L10')
 #------------ VARS END------------
 
-
+"""
 #Load Data
-results_path = Path('/home/hatti/Data/spinglass/T_sorted')
+results_path = Path('/home/hatti/Data/spinglass/T_sorted_L10')
 results_path = results_path / ('T' + str(T))
 file_paths = [file for file in results_path.iterdir()]
 data = [pd.read_csv(path).drop('Unnamed: 0', axis=1) for path in file_paths]
@@ -69,12 +70,12 @@ mean_overlap = np.mean(linked_overlap, axis=1)
 std_err_katz = np.std(katz_energy, axis=1) / np.sqrt(np.shape(katz_energy)[1])
 std_err_overlap = np.std(linked_overlap, axis=1) / np.sqrt(np.shape(linked_overlap)[1])
 
-np.savez('./data/equilib_data.npz',sweep=sweep,
+np.savez(results_path '/equilib_data.npz',sweep=sweep,
             mean_katz=mean_katz,mean_overlap=mean_overlap,
-            std_err_katz=std_err_katz, std_err_overlap=std_err_overlap)
+            std_err_katz=std_err_katz, std_err_overlap=std_err_overlap)"""
 
 
-output =np.load('./data/equilib_data.npz')
+output =np.load(results_path / 'equilib_data.npz')
 sweep = output['sweep']
 mean_katz=output['mean_katz']
 mean_overlap=output['mean_overlap']
@@ -103,7 +104,7 @@ ax.fill_between(sweep, mean_katz+std_err_katz,mean_katz-std_err_katz, color='gra
 ax.plot(sweep,mean_overlap, 
             linestyle='dashdot', color='black', label = r'$\langle q_l \rangle$')
 ax.fill_between(sweep, mean_overlap+std_err_overlap,mean_overlap-std_err_overlap, color='gray')
-ax.set_xlabel("Sweep")
+ax.set_xlabel("$\it{Sweep}$")
 ax.legend(loc='lower right')
 ax.set_xscale('log')
 ax.grid()
