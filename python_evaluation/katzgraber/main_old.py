@@ -1,47 +1,83 @@
-
 import numpy as np
 import pandas as pd
 from pathlib import Path
 import re
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+
 def main():
-    #results_path = Path('results')
-    #file_regex = re.compile('grid.*tsv')
-    #file_paths = [file for file in results_path.iterdir() if file_regex.match(file.name)]
-    #print("Read results directory")
-    #data = [pd.read_csv(file,sep='\t') for file in file_paths]
-    ##in the first grid the first datapoint is at run=0 where all others start at run=1000
-    ##-> we need to delete the first row to produce matching DataFrames
-    #data[0] = data[0].drop(index=0, axis=1).reset_index(drop=True)
-    #data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
-    #
-    #filtered_data = filter_by_T_and_average(data,target_T=0.5) 
-    #filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['linked_overlapp']))
-    #filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['katz_energy']))
-    ##data = mov_average_for_list_of_df(data, 'linked Overlapp')
-    ##data = mov_average_for_list_of_df(data, 'katz_energy')
-    ##av_data = average_list_of_df(data)
-    #filtered_data.to_csv('./T05_filtered_data.csv')
+    #all_results_path = '/users/student/xese4803/Data/spinglass/testData'
+    all_results_path = '/home/hatti/Data/spinglass'
+    all_results_path = Path(all_results_path)
+    filtered_data = []
+    for results_path in all_results_path.iterdir():
+        calc_one_dir(results_path)
+        filtered_data.append(pd.read_csv(results_path / 'T05_filtered_data.csv'))
+    #print("BP")
     
-    filtered_data = pd.read_csv('./T05_filtered_data.csv')    
+    linked_overlapp = np.zeros((len(filtered_data[0]),len(filtered_data)))
+    katz_energy = np.zeros((len(filtered_data[0]),len(filtered_data)))
+    sweep = filtered_data[0]["run"].to_numpy()/1000;
+    for idx, df in enumerate(filtered_data):
+        linked_overlapp[:,idx]=filtered_data[idx]["av_linked_overlapp"]
+        katz_energy[:,idx]=filtered_data[idx]["av_katz_energy"]
+        
+    print("BP")
+    mean_katz = np.mean(katz_energy, axis=1)
+    mean_overlapp = np.mean(linked_overlapp, axis=1)
+    
+    
+    std_err_katz = np.std(katz_energy, axis=1) / np.sqrt(np.shape(katz_energy)[1])
+    std_err_overlapp = np.std(linked_overlapp, axis=1) / np.sqrt(np.shape(linked_overlapp)[1])
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+    #marker, caps, bars=ax.errorbar(sweep,mean_katz, yerr= std_err_katz,
+    #         linestyle='solid', color='black', label = r'$1-2T|U|/z$' )
+    #[bar.set_alpha(0.5) for bar in bars]
+    #[cap.set_alpha(0.5) for cap in caps]
+    #marker, caps, bars=ax.errorbar(sweep,mean_overlapp, yerr= std_err_overlapp,
+    #         linestyle='dashdot', color='black', label = r'$\langle q_l \rangle$')
+    #[bar.set_alpha(0.5) for bar in bars]
+    #[cap.set_alpha(0.5) for cap in caps]
+    ax.plot(sweep,mean_katz,
+             linestyle='solid', color='black', label = r'$1-2T|U|/z$' )
+    ax.fill_between(sweep, mean_katz+std_err_katz,mean_katz-std_err_katz, color='gray')
+    ax.plot(sweep,mean_overlapp, 
+             linestyle='dashdot', color='black', label = r'$\langle q_l \rangle$')
+    ax.fill_between(sweep, mean_overlapp+std_err_overlapp,mean_overlapp-std_err_overlapp, color='gray')
+    ax.set_xlabel("Sweep")
+    ax.legend(loc='lower right')
+    ax.set_xscale('log')
+    ax.grid()
+    fig.savefig('T05_10E6Sweeps.png')
+    plt.show() 
 
-    """ plt.plot(av_data["run"]/1000, av_data["av_linked Overlapp"] )
-    plt.plot(av_data["run"]/1000, av_data["av_katz_energy"] )
-    plt.xlabel("Sweep")
-    plt.grid()
-    plt.show() """
+    #print("hello World")
     
-    plt.plot(filtered_data["run"]/1000, filtered_data["av_linked_overlapp"] )
-    plt.plot(filtered_data["run"]/1000, filtered_data["av_katz_energy"] )
-    plt.xlabel("Sweep")
-    plt.xscale('log')
-    plt.grid()
-    plt.show()
 
-    print("hello World")
+def calc_one_dir(results_path):
+     
+        file_regex = re.compile('grid.*tsv')
+        file_paths =[file for file in results_path.iterdir() if file_regex.match(file.name)]
+        
+        print("Read results directory "+results_path.name)
+        data = [pd.read_csv(file,sep='\t') for file in file_paths]
+        
+        print("BP")
+        #data = katz_energy_for_list_of_df(data, z=6, J_square=1, num_particles=1000)
+        
+        filtered_data = filter_by_T_and_average(data,target_T=0.5) 
+        filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['linked_overlapp']))
+        filtered_data = append_df(filtered_data, mov_average_over_half(filtered_data['katz_energy']))
     
-def filter_by_T_and_average(input_data: list[pd.DataFrame], target_T: float) -> pd.DataFrame:
+        filtered_data.to_csv(results_path / 'T05_filtered_data.csv')
+    
+    
+
+def filter_by_T_and_average(input_data, target_T):
     '''this function produces a resulting DataFrame with the same size
     and column names as the input DataFrames, where each row is the average
     of the input_data rows where the rows temperature is equal to target_T'''
@@ -64,7 +100,7 @@ def filter_by_T_and_average(input_data: list[pd.DataFrame], target_T: float) -> 
 
             
     
-def average_list_of_df(input_data: list[pd.DataFrame]) -> pd.DataFrame:
+def average_list_of_df(input_data):
     '''Takes a list of pd.Dataframes with equal columns and size and computes
         a DataFrame with columns and size equal to the input_data containing the
         average all DataFrames in input_data.
@@ -76,7 +112,7 @@ def average_list_of_df(input_data: list[pd.DataFrame]) -> pd.DataFrame:
     return result_df/len(input_data)
         
  
-def mov_average_for_list_of_df(data: list[pd.DataFrame], column_name: str) -> list[pd.DataFrame]:
+def mov_average_for_list_of_df(data, column_name):
     '''Loops over a list of of DataFrames and computes the 'mov_average_over_half()' for the specified 
     column in 'column_name' for every DataFrame'''
     
@@ -87,7 +123,7 @@ def mov_average_for_list_of_df(data: list[pd.DataFrame], column_name: str) -> li
         data[idx] = new_df
     return data
 
-def katz_energy_for_list_of_df(data: list[pd.DataFrame], z:int, J_square: float, num_particles: int) -> list[pd.DataFrame]:
+def katz_energy_for_list_of_df(data, z, J_square, num_particles):
     '''Loops over a list of of DataFrames and computes the 'katz_energy_for_df' for the specified 
     column in 'column_name' for every DataFrame'''
     print("Compute katz energy for all data")
@@ -99,13 +135,13 @@ def katz_energy_for_list_of_df(data: list[pd.DataFrame], z:int, J_square: float,
     return data
 
 
-def append_df(input_df: pd.DataFrame, input_series: pd.Series) -> pd.DataFrame:
+def append_df(input_df, input_series):
     '''function to concat a series to DataFrame'''
     input_df.reset_index(drop=True, inplace=True)
     input_series.reset_index(drop=True, inplace=True)
     return pd.concat([input_df, input_series], axis=1)
 
-def katz_energy_for_df(input_df: pd.DataFrame, z:int, J_square: float, num_particles: int) -> pd.Series:
+def katz_energy_for_df(input_df, z, J_square, num_particles):
     '''adds a column to input df containing the 'katzgraber energy' with column name 'katz_energy' '''
     katz_energy_list = []
     for (idx,row) in input_df.iterrows():
@@ -115,7 +151,7 @@ def katz_energy_for_df(input_df: pd.DataFrame, z:int, J_square: float, num_parti
     katz_energy_series = pd.Series(katz_energy_list, name= 'katz_energy')
     return katz_energy_series
     
-def mov_average_over_half(input: pd.Series) -> pd.Series:
+def mov_average_over_half(input):
     '''takes a pd.Series and calculates for every index in the series
     the average of all elements between the index and half of the index
     The average is then stored in the output Series
@@ -127,7 +163,7 @@ def mov_average_over_half(input: pd.Series) -> pd.Series:
         results.append(input[idx_half:idx+1].mean())
     return pd.Series(results, name='av_'+input.name)
         
-def katz_energy(T: float, U:float, z:int, J_square: float, num_particles: int) -> float:
+def katz_energy(T, U, z, J_square, num_particles):
     '''computes the 'Energy' Term from the Katzgraber Paper
     our Energy ist normalized yet-> we need to do it here'''
     return 1-2.0*T*abs(U)/(z*J_square*num_particles)

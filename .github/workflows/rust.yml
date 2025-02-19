@@ -1,4 +1,11 @@
-on: [push, pull_request]
+#Original
+#on: [push, pull_request]
+
+#my version
+on:
+  push:
+    branches:
+      - deployment
 
 name: CI
 

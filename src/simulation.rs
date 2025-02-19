@@ -3,6 +3,8 @@ use std::fs;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle, current};
+use std::path;
+use std::time;
 
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -109,11 +111,26 @@ impl Simulation{
 
     #[cfg(not(target_arch = "wasm32"))]
     fn init_dir(&self){
-        use std::io::Write;
+        fs::create_dir_all(&self.default_grid_config.save_path)
+            .expect(&format!("Can't create save path: {}", self.default_grid_config.save_path));
 
-        fs::remove_dir_all(&self.default_grid_config.save_path);
-        fs::create_dir(&self.default_grid_config.save_path);
-        fs::copy("./config.toml", self.default_grid_config.save_path.clone() + "/config.toml"); 
+
+        //Look every second for 10 seconds if directory exists. If not panic!
+/*         let mut loop_counter = 0;
+        loop{
+            match path::Path::new(&self.default_grid_config.save_path).exists(){
+                true => break,
+                false =>{
+                    if loop_counter >= 10 {panic!("Can't create directory {}",self.default_grid_config.save_path)};
+                    loop_counter += 1;
+                    thread::sleep(time::Duration::from_secs(1));
+                }
+
+            }
+        } */
+
+        fs::copy("./config.toml", self.default_grid_config.save_path.clone() + "/config.toml") 
+            .expect(&format!("Can't copy config.toml to save path: {}", self.default_grid_config.save_path));
         // let config_string = toml::to_string(&self.config).unwrap();
         // fs::File::create("./results/config.toml").unwrap().write_all(config_string.as_bytes());
     }
@@ -161,7 +178,7 @@ impl Simulation{
                     //Then it also wouldn't be possible to compute the linked overlapp
                     // then the size of other_ids would be 0
                     if len == other_ids.len() || other_ids.len() == 0{
-                        self.grid_mut(*grid_id).unwrap().update_history(f64::NAN)
+                        self.grid_mut(*grid_id).unwrap().update_history(f64::NAN, f64::NAN)
                     }
                     
                     //sample some other id at the same temperature
@@ -178,14 +195,19 @@ impl Simulation{
                     //Helmut G. Katzgraber, Matteo Palassini, and A. P. Young
                     let z_half = self.grid(*grid_id).unwrap().dimensions().len() as f64;
                     let normed_linked_overlapp = linked_overlapp/(z_half*capacity as f64);
+
+                    let overlap = self.grid(*grid_id).unwrap().calc_overlap(
+                        self.grid(*other_id).unwrap()).unwrap();
+                    let normed_overlap = overlap/capacity as f64;
+
                     //let grid pdate history with this overlapp
-                    self.grid_mut(*grid_id).unwrap().update_history(normed_linked_overlapp);
+                    self.grid_mut(*grid_id).unwrap().update_history(normed_overlap,normed_linked_overlapp);
 
                 },
                 None => {
                     //we did not find a equalTGridIDs with matching T -> grid isnt in Pt enviroment
                     //->no overlapp can be calculated
-                    self.grid_mut(*grid_id).unwrap().update_history(f64::NAN);
+                    self.grid_mut(*grid_id).unwrap().update_history(f64::NAN,f64::NAN);
                 },
             }
         }

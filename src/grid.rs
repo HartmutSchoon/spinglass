@@ -2,7 +2,11 @@ use crate::{config::*, particles::*};
 use log::{error, warn};
 use rand::{self, Rng};
 use rand_distr::Distribution;
+
 use std::fs;
+use std::thread;
+use std::time;
+use std::path;
 
 #[derive(Clone)]
 pub struct History {
@@ -230,8 +234,21 @@ impl Grid {
 
     #[cfg(not(target_arch = "wasm32"))]
     pub fn init_output_file(&mut self) -> &mut Self {
-        let path = format!("{}/grid_{}.tsv",self.config.save_path, self.id);
-        fs::remove_file(path.clone());
+        let path = format!("{}/grid_{}.tsv",self.config.save_path, self.id);  
+
+        fs::remove_file(&path);
+/*         let mut loop_counter = 0;
+        loop{
+            match path::Path::new(&path).exists(){
+                false => break,
+                true=>{
+                    if loop_counter >= 10 {panic!("Cant' create file handle for grid! Path: {}", &path)};
+                    loop_counter += 1;
+                    thread::sleep(time::Duration::from_secs(1));
+                }
+            };
+        }; */
+        
         self.output_file = Some(
             fs::OpenOptions::new()
                 .create_new(true)
@@ -239,7 +256,7 @@ impl Grid {
                 .open(path)
                 .expect("Unable to open file"),
         );
-        let header = String::from("run\tT\tenergy\tmagnetization\tlinked_overlapp\n");
+        let header = String::from("run\tT\tenergy\tmagnetization\toverlap\tlinked_overlapp\n");
 
         self.output_file
             .as_mut()
@@ -259,10 +276,11 @@ impl Grid {
         T: f64,
         energy: f64,
         magnetization: i32,
+        overlap: f64,
         linked_overlapp:f64) {
         if let Some(file) = self.output_file.as_mut() {
-            let output = String::from(format!("{}\t{}\t{}\t{}\t{}\n",
-                 run, T, energy, magnetization,linked_overlapp));
+            let output = String::from(format!("{}\t{}\t{}\t{}\t{}\t{}\n",
+                 run, T, energy, magnetization,overlap,linked_overlapp));
             file.write_all(output.as_bytes());
         }
     }
@@ -611,7 +629,7 @@ impl Grid {
                     0.5 * neighbour_link.coupling() * f64::from(spin) * f64::from(neighbour_spin);
             }
             //Add external field to energy
-            energy -= 0.5 * self.external_field * f64::from(spin);
+            energy -= self.external_field * f64::from(spin);
         }
         return energy;
     }
@@ -986,7 +1004,7 @@ impl Grid {
     pub fn set_id(&mut self, id: u32) {
         self.id = id
     }
-    pub fn update_history(&mut self, linked_overlapp:f64) {
+    pub fn update_history(&mut self, overlap:f64, linked_overlapp:f64) {
         let run = self.run;
         let T = self.T;
         let energy = self.calc_energy();
@@ -1001,7 +1019,7 @@ impl Grid {
             run, T, energy, magnetization, linked_overlapp, katz_energy, av_linked_overlapp, av_katz_energy);
         
         if run%self.config.skip_save==0{
-            self.write_to_output_file(run, T, energy, magnetization,linked_overlapp);
+            self.write_to_output_file(run, T, energy, magnetization,overlap,linked_overlapp);
         }
     }
     pub fn history(&self) -> &History {
