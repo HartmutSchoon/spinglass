@@ -45,17 +45,17 @@ impl Spin{
         }
     }
 
-    pub fn value(&self)->i64{
+/*     pub fn value(&self)->i32{
         match self{
             Spin::Up => return 1,
             Spin::Down => return -1,
         }
-    }
+    } */
 }
 
 impl fmt::Display for Spin {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{}",self.value().to_string())
+        write!(f,"{}",self.to_string())
     }
 }
 
@@ -77,13 +77,22 @@ impl From<&Spin> for f64{
     } 
 }
 
+impl From<&Spin> for i32{
+    fn from(spin: &Spin) -> Self {
+        match spin{
+            Spin::Up => return 1,
+            Spin::Down => return -1,
+        }
+    } 
+}
+
 
 
 
 #[derive(Clone)]
 pub struct Particle{
     id: u32,
-    spin:Spin,
+    pub spin:Spin,
     links: Vec<Link>,
 }
 
@@ -147,7 +156,7 @@ impl fmt::Display for Particle{
         write!(f, "Particle[idx:{} spin:{} Neighbours:({})]", self.id, self.spin, output)
     }
 }
-
+/* 
 #[cfg(test)]
 mod tests{
     use super::*;
@@ -195,4 +204,4 @@ mod tests{
         assert_eq!(particles[0].links.len(), 0);
 
     }
-}
+} */

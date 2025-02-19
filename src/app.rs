@@ -14,16 +14,24 @@ pub struct ParticleRect{
 
 struct AppState{
     pub sweep: grid::Sweep,
+    pub show_overlapp: bool,
+    pub show_pt_acceptance: bool,
 }
 impl AppState{
     pub fn new(sweep: grid::Sweep)->Self{
-        return Self {sweep};
+        return Self {
+            sweep,
+            show_overlapp:false,
+            show_pt_acceptance: false};
     }
 
 }
 impl Default for AppState {
     fn default() -> Self {
-        Self { sweep: Default::default() }
+        return Self { 
+            sweep: Default::default(),
+            show_overlapp: false,
+            show_pt_acceptance:false,};
     }
 }
 
@@ -37,8 +45,8 @@ pub struct App {
 impl App{
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         //load config and split into smaller parts
-        let config = config::load(); 
-        let mut sim = Simulation::new();
+        let config = config::Config::default(); 
+        let mut sim = Simulation::new(config.clone());
         let app_state = AppState::default();
 
         return App {
@@ -152,16 +160,13 @@ impl eframe::App for App{
                 ui.add(DragValue::new(&mut external_field).speed(0.01).prefix("External field: "));
                 self.sim.default_grid_config.external_field = external_field as f64;
 
-                let mut min_coupling:f32 = self.sim.default_grid_config.coupling_limits[0] as f32;
-                ui.add(DragValue::new(&mut min_coupling).speed(0.01).prefix("Min coupling: "));
-                self.sim.default_grid_config.coupling_limits[0] = min_coupling as f64;
-
-                let mut max_coupling:f32 = self.sim.default_grid_config.coupling_limits[1] as f32;
-                ui.add(DragValue::new(&mut max_coupling).
-                        speed(0.01).prefix("Max coupling:: ").clamp_range(min_coupling..=f32::INFINITY));
-                self.sim.default_grid_config.coupling_limits[1] = max_coupling as f64;
-
-
+                let mut coupling_mean:f32 = self.sim.default_grid_config.coupling_mean as f32;
+                ui.add(DragValue::new(&mut coupling_mean).speed(0.01).prefix("Coupling mean: "));
+                self.sim.default_grid_config.coupling_mean = coupling_mean as f64;
+                
+                let mut coupling_variance:f32 = self.sim.default_grid_config.coupling_variance as f32;
+                ui.add(DragValue::new(&mut coupling_variance).speed(0.01).prefix("Coupling variance: "));
+                self.sim.default_grid_config.coupling_variance = coupling_variance as f64;
 
                 if ui.add(egui::Button::new("Create!")).clicked(){
                     self.sim.new_grid();
@@ -171,12 +176,12 @@ impl eframe::App for App{
             .show(ui,|ui|{
                 ui.label("Simulation Parameters");
                 ui.label("#Steps Grids run in Multithreading: ");
-                let mut thread_steps = self.sim.config.thread_steps;
-                let mut slider_steps = thread_steps as f64 / 1000.0;
+                let mut steps_per_sweep = self.sim.config.steps_per_sweep;
+                let mut slider_steps = steps_per_sweep as f64 / 1000.0;
                 ui.add(DragValue::new(&mut slider_steps).speed(100)
                     .prefix("#Threaded Steps: ").suffix("K"));
-                thread_steps = (slider_steps * 1000.0) as u32;
-                self.sim.config.thread_steps = thread_steps;
+                steps_per_sweep = (slider_steps * 1000.0) as u32;
+                self.sim.config.steps_per_sweep = steps_per_sweep;
                 if ui.add(egui::Button::new("Run Simulation")).clicked(){
                     self.sim.running=true;
                 };
@@ -186,6 +191,20 @@ impl eframe::App for App{
                 if ui.add(egui::Button::new("Delete all grids")).clicked(){
                     self.sim.queue_all_grids_deletion();
                 };
+
+                if ui.add(egui::Button::new("Start Custom Run")).clicked(){
+                    self.sim.custom_run();
+                }
+            });
+            Frame::group(ui.style())
+            .show(ui,|ui|{
+                ui.label("Additional Windows");
+                if ui.add(egui::Button::new("Show Overlapp")).clicked(){
+                    self.app_state.show_overlapp = !self.app_state.show_overlapp;
+                }
+                if ui.add(egui::Button::new("Show PT Acceptance Ration")).clicked(){
+                    self.app_state.show_pt_acceptance = !self.app_state.show_pt_acceptance;
+                }
 
             });
         });
@@ -238,10 +257,10 @@ impl eframe::App for App{
                                         ui.label(format!("Clone of Grid {}",id));
                                     }
 
-                                    let coupling_limits = self.sim.grid(grid_id).unwrap().config.coupling_limits;
-                                    ui.label(format!("Couplings: {:.2} - {:.2}",coupling_limits[0],coupling_limits[1]));
-                                    
-            
+                                    let coupling_mean = self.sim.grid(grid_id).unwrap().config.coupling_mean;
+                                    let coupling_variance = self.sim.grid(grid_id).unwrap().config.coupling_variance;
+                                    ui.label(format!("Coupling mean: {:.2}", coupling_mean));
+                                    ui.label(format!("Coupling variance: {:.2}", coupling_variance));
             
                                     let mut T = self.sim.grid(grid_id).unwrap().T();
                                     ui.add(DragValue::new(&mut T).speed(0.01).prefix("Temperature: "));
@@ -300,11 +319,6 @@ impl eframe::App for App{
                                 ui.vertical(|ui|{
                                     ui.label("Parallel Tempering");
 
-                    
-                                    ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.num_T_steps)
-                                        .speed(0.1)
-                                        .prefix("#Different temperatures: "));
-
                                     ui.add(DragValue::new(&mut self.sim.pt_enviroment.config.num_grids_equal_T)
                                         .speed(0.1)
                                         .prefix("#Grids per temperature: "));
@@ -336,32 +350,97 @@ impl eframe::App for App{
                     .show(ui, |plot_ui|{
                         let history = self.sim.history_by_id(grid_id).unwrap();
                         let T:PlotPoints = (0..history.current_size()).map(|i|{
-                            let x = (i as f64 * self.sim.config.thread_steps as f64);
+                            let x = i as f64;
                             let T= history.T[i];
                             [x,T]
                             }).collect();
                         let t_line=Line::new(T).name("Temperature");
                         plot_ui.line(t_line);
                         let E:PlotPoints = (0..history.current_size()).map(|i|{
-                            let x = (i as f64 * self.sim.config.thread_steps as f64);
-                            let energy= history.energy[i];
+                            let x = i as f64;
+                            let energy= history.energy[i]/self.sim.grid(grid_id).unwrap().capacity as f64;
                             [x,energy]
                         }).collect();
-                        let e_line = Line::new(E).name("Energy");;
+                        let e_line = Line::new(E).name("Energy");
                         plot_ui.line(e_line);
 
                         let magnetization:PlotPoints = (0..history.current_size()).map(|i|{
-                            let x = (i as f64 * self.sim.config.thread_steps as f64);
-                            let mag= history.magnetization[i];
+                            let x = i as f64;
+                            let mag= history.magnetization[i] as f64/self.sim.grid(grid_id).unwrap().capacity as f64;
                             [x,mag]
                         }).collect();
                         let mag_line = Line::new(magnetization).name("Magnetization");
                         plot_ui.line(mag_line);
+
+                        let linked_overlapp:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let overlapp = history.linked_overlapp[i] as f64;
+                            [x,overlapp]
+                        }).collect();
+                        let overlapp_line = Line::new(linked_overlapp).name("Linked Overlapp");
+                        plot_ui.line(overlapp_line);
+
+                        let katz_energy:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let katz_en = history.katz_energy[i] as f64;
+                            [x,katz_en]
+                        }).collect();
+                        let ke_line = Line::new(katz_energy).name("1-2T|U|/zJ^2");
+                        plot_ui.line(ke_line);
+
+                        let av_linked_overlapp:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let overlapp = history.av_linked_overlapp[i] as f64;
+                            [x,overlapp]
+                        }).collect();
+                        let overlapp_line = Line::new(av_linked_overlapp).name("<ql>");
+                        plot_ui.line(overlapp_line);
+
+                        let av_katz_energy:PlotPoints = (0..history.current_size()).map(|i|{
+                            let x = i as f64;
+                            let av_katz_en = history.av_katz_energy[i] as f64;
+                            [x,av_katz_en]
+                        }).collect();
+                        let av_ke_line = Line::new(av_katz_energy).name("<1-2T|U|/zJ^2>");
+                        plot_ui.line(av_ke_line); 
+                        
                     });
                 
                 });
             }//Grid Loop
-            
+            if self.app_state.show_overlapp {
+                Window::new("Overlapp").show(ctx, |ui| {
+                    Plot::new("Overlapp_Plot")
+                    .legend(Legend::default())
+                    .show(ui, |plot_ui|{
+                        let overlapp:PlotPoints = (0..self.sim.overlapp_histo.len()).map(|i|{
+                            let x = i as f64*self.sim.config.histo_width-1.0;
+                            let overlapp= (self.sim.overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
+                            [x,overlapp]
+                        }).collect(); 
+                        let overlapps_line = Line::new(overlapp).name("Overlapp");
+                        plot_ui.line(overlapps_line);
+                        let linked_overlapp:PlotPoints = (0..self.sim.linked_overlapp_histo.len()).map(|i|{
+                            let x = i as f64*self.sim.config.histo_width-1.0;
+                            let overlapp= (self.sim.linked_overlapp_histo[i] as f64/self.sim.overlapp_histo.len() as f64);
+                            [x,overlapp]
+                        }).collect(); 
+                        let linked_overlapps_line = Line::new(linked_overlapp).name("Linked Overlapp");
+                        plot_ui.line(linked_overlapps_line);
+                    });
+
+                });
+            };
+            if self.app_state.show_pt_acceptance {
+                Window::new("Parallel Tempering").show(ctx, |ui| {
+                    for equalTGridIDs in self.sim.pt_enviroment.pt_ids.iter(){
+                        ui.label(format!(
+                            "T: {:.2}, Acceptance Prob: {:.2} %",
+                            equalTGridIDs.T,
+                            equalTGridIDs.current_pt_acceptance_prob*100.0));
+                    }
+                });
+            }
             self.sim.simulation_step();
         });//CentralPanel
         self.sim.delete_queded_grids();

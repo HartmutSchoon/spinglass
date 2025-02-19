@@ -1,2 +1,6 @@
 /target
 /dist
+**/results/*
+**/logs
+**/venv
+**/data
